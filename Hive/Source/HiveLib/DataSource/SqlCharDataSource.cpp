@@ -153,7 +153,7 @@ Sqf::Value SqlCharDataSource::fetchCharacterInitial( string playerId, int server
 		//try getting previous character info
 		{
 			scoped_ptr<QueryResult> prevCharRes(getDB()->PQuery(
-				("SELECT `Generation`, `Humanity`, `Model` FROM `Character_DATA` WHERE `"+_idFieldName+"` = '%s' AND `Alive` = 0 ORDER BY `CharacterID` DESC LIMIT 1").c_str(), getDB()->escape_string(playerId).c_str()));
+				("SELECT `Generation`, `Humanity`, `Model`, `InstanceID` FROM `Character_DATA` WHERE `"+_idFieldName+"` = '%s' AND `Alive` = 0 ORDER BY `CharacterID` DESC LIMIT 1").c_str(), getDB()->escape_string(playerId).c_str()));
 			if (prevCharRes)
 			{
 				Field* fields = prevCharRes->Fetch();
@@ -170,6 +170,9 @@ Sqf::Value SqlCharDataSource::fetchCharacterInitial( string playerId, int server
 				{
 					model = fields[2].GetCppString();
 				}
+
+
+
 			}
 		}
 		Sqf::Value medical = Sqf::Parameters(); //script will fill this in if empty
@@ -237,7 +240,7 @@ Sqf::Value SqlCharDataSource::fetchCharacterDetails( int characterId )
 	Sqf::Parameters retVal;
 	//get details from db
 	scoped_ptr<QueryResult> charDetRes(getDB()->PQuery(
-		"SELECT `%s`, `Medical`, `Generation`, `KillsZ`, `HeadshotsZ`, `KillsH`, `KillsB`, `CurrentState`, `Humanity` "
+		"SELECT `%s`, `Medical`, `Generation`, `KillsZ`, `HeadshotsZ`, `KillsH`, `KillsB`, `CurrentState`, `Humanity`, `InstanceID` "
 		"FROM `Character_DATA` WHERE `CharacterID`=%d", _wsFieldName.c_str(), characterId));
 
 	if (charDetRes)
@@ -248,6 +251,7 @@ Sqf::Value SqlCharDataSource::fetchCharacterDetails( int characterId )
 		Sqf::Value stats = lexical_cast<Sqf::Value>("[0,0,0,0]"); //killsZ, headZ, killsH, killsB
 		Sqf::Value currentState = Sqf::Parameters(); //empty state (aiming, etc)
 		int humanity = 2500;
+		int instance = 1;
 		//get stuff from row
 		{
 			Field* fields = charDetRes->Fetch();
@@ -285,6 +289,7 @@ Sqf::Value SqlCharDataSource::fetchCharacterDetails( int characterId )
 				_logger.warning("Invalid CurrentState (detail load) for CharacterID("+lexical_cast<string>(characterId)+"): "+fields[7].GetCppString());
 			}
 			humanity = fields[8].GetInt32();
+			instance = fields[9].GetInt32();
 		}
 
 		retVal.push_back(string("PASS"));
@@ -293,6 +298,7 @@ Sqf::Value SqlCharDataSource::fetchCharacterDetails( int characterId )
 		retVal.push_back(currentState);
 		retVal.push_back(worldSpace);
 		retVal.push_back(humanity);
+		retVal.push_back(instance);
 	}
 	else
 	{
@@ -302,7 +308,7 @@ Sqf::Value SqlCharDataSource::fetchCharacterDetails( int characterId )
 	return retVal;
 }
 
-bool SqlCharDataSource::updateCharacter( int characterId, const FieldsType& fields )
+bool SqlCharDataSource::updateCharacter( int characterId, int serverId, const FieldsType& fields )
 {
 	map<string,string> sqlFields;
 
@@ -331,7 +337,15 @@ bool SqlCharDataSource::updateCharacter( int characterId, const FieldsType& fiel
 			name == "KillsH" || name == "KillsB" || name == "Humanity")
 		{
 			int integeroid = static_cast<int>(Sqf::GetDouble(val));
-			if (integeroid > 0) sqlFields[name] = "(`"+name+"` + "+lexical_cast<string>(integeroid)+")";
+			char intSign = '+';
+			if (integeroid < 0)
+			{
+				intSign = '-';
+				integeroid = abs(integeroid);
+			}
+
+			if (integeroid > 0) 
+				sqlFields[name] = "(`"+name+"` "+intSign+" "+lexical_cast<string>(integeroid)+")";
 		}
 		//strings
 		else if (name == "Model")
@@ -352,7 +366,7 @@ bool SqlCharDataSource::updateCharacter( int characterId, const FieldsType& fiel
 			if (it != sqlFields.end())
 				query += " , ";
 		}
-		query += " WHERE `CharacterID` = " + lexical_cast<string>(characterId);
+		query += ", `InstanceID` = " + lexical_cast<string>(serverId) + "  WHERE `CharacterID` = " + lexical_cast<string>(characterId);
 		bool exRes = getDB()->Execute(query.c_str());
 		poco_assert(exRes == true);
 
@@ -400,4 +414,37 @@ bool SqlCharDataSource::recordLogin( string playerId, int characterId, int actio
 	poco_assert(exRes == true);
 
 	return exRes;
+}
+
+Sqf::Value SqlCharDataSource::fetchObjectId( Int64 objectIdent )
+{
+	Sqf::Parameters retVal;
+	//get details from db
+	scoped_ptr<QueryResult> charDetRes(getDB()->PQuery(
+		"SELECT `ObjectID` FROM `Object_DATA` WHERE `ObjectUID`=%lld", objectIdent));
+
+	if (charDetRes)
+	{
+		int objectid = 0;
+		//get stuff from row
+		{
+			Field* fields = charDetRes->Fetch();
+			objectid = fields[0].GetInt32();
+		}
+		if(objectid != 0)
+		{
+			retVal.push_back(string("PASS"));
+			retVal.push_back(lexical_cast<string>(objectid));
+		}
+		else 
+		{
+			retVal.push_back(string("ERROR"));
+		}
+	}
+	else
+	{
+		retVal.push_back(string("ERROR"));
+	}
+
+	return retVal;
 }

@@ -70,6 +70,8 @@ HiveExtApp::HiveExtApp(string suffixDir) : AppServer("HiveExt",suffixDir), _serv
 	handlers[306] = boost::bind(&HiveExtApp::vehicleDamaged,this,_1);
 	handlers[307] = boost::bind(&HiveExtApp::getDateTime,this,_1);
 	handlers[308] = boost::bind(&HiveExtApp::objectPublish,this,_1);
+	// Custom to just return db ID for object UID
+	handlers[388] = boost::bind(&HiveExtApp::loadObjectID,this,_1);
 	handlers[309] = boost::bind(&HiveExtApp::objectInventory,this,_1,true);
 	handlers[310] = boost::bind(&HiveExtApp::objectDelete,this,_1,true);
 	//player/character loads
@@ -280,6 +282,12 @@ Sqf::Value HiveExtApp::loadCharacterDetails( Sqf::Parameters params )
 	return _charData->fetchCharacterDetails(characterId);
 }
 
+Sqf::Value HiveExtApp::loadObjectID( Sqf::Parameters params )
+{
+	Int64 ObjectUID = Sqf::GetBigInt(params.at(0));
+	return _charData->fetchObjectId(ObjectUID);
+}
+
 Sqf::Value HiveExtApp::recordCharacterLogin( Sqf::Parameters params )
 {
 	string playerId = Sqf::GetStringAny(params.at(0));
@@ -405,8 +413,9 @@ Sqf::Value HiveExtApp::playerUpdate( Sqf::Parameters params )
 		_logger.warning("Update of character " + lexical_cast<string>(characterId) + " only had " + lexical_cast<string>(params.size()) + " parameters out of 16");
 	}
 
+	
 	if (fields.size() > 0)
-		return booleanReturn(_charData->updateCharacter(characterId,fields));
+		return booleanReturn(_charData->updateCharacter(characterId,getServerId(),fields));
 
 	return booleanReturn(true);
 }

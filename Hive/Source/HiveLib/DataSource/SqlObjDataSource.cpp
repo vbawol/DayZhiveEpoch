@@ -246,4 +246,3 @@ bool SqlObjDataSource::createObject( int serverId, const string& className, doub
 
 	return exRes;
 }
-

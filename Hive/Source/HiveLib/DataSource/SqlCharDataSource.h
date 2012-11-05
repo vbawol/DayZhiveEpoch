@@ -29,7 +29,8 @@ public:
 
 	Sqf::Value fetchCharacterInitial( string playerId, int serverId, const string& playerName ) override;
 	Sqf::Value fetchCharacterDetails( int characterId ) override;
-	bool updateCharacter( int characterId, const FieldsType& fields ) override;
+	Sqf::Value fetchObjectId( Int64 objectIdent ) override;
+	bool updateCharacter( int characterId, int serverId, const FieldsType& fields ) override;
 	bool initCharacter( int characterId, const Sqf::Value& inventory, const Sqf::Value& backpack ) override;
 	bool killCharacter( int characterId, int duration ) override;
 	bool recordLogin( string playerId, int characterId, int action ) override;

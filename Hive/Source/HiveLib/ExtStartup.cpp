@@ -17,15 +17,22 @@
 */
 
 #include "ExtStartup.h"
+#include <boost/thread.hpp>
 
 namespace
 {
 	unique_ptr<HiveExtApp> gApp;
+	boost::thread gInitThread;
 };
 
 void CALLBACK RVExtension(char *output, int outputSize, const char* function)
 {
+	gInitThread.join();
+
+	if (gApp)
 	gApp->callExtension(function, output, outputSize);
+	else
+		memset(output,0,outputSize);
 }
 
 #include <fcntl.h>
@@ -123,7 +130,7 @@ namespace
 
 namespace ExtStartup
 {
-	bool ProcessStartup(MakeAppFunction makeAppFunc)
+	void ProcessStartup(MakeAppFunction makeAppFunc)
 	{
 		LPTSTR* argv;
 		int argc;
@@ -153,29 +160,31 @@ namespace ExtStartup
 		}
 
 		gApp.reset(makeAppFunc(serverFolder));
+		gInitThread = boost::thread([argc,argv]()
+		{
 		int appRes = gApp->run(argc, argv);
 		LocalFree(argv);
 		if (appRes == Poco::Util::Application::EXIT_IOERR)
 		{
 			MessageBox(NULL,TEXT("Error connecting to the service"),TEXT("Hive error"),MB_ICONERROR|MB_OK);
-			return false;
+				gApp.reset();
 		}
 		else if (appRes == Poco::Util::Application::EXIT_DATAERR)
 		{
 			MessageBox(NULL,TEXT("Error loading required resources"),TEXT("Hive error"),MB_ICONERROR|MB_OK);
-			return false;
+				gApp.reset();
 		}
 		else if (appRes != Poco::Util::Application::EXIT_OK)
 		{
 			MessageBox(NULL,TEXT("Unknown internal error"),TEXT("Hive error"),MB_ICONERROR|MB_OK);
-			return false;
+				gApp.reset();
 		}
-
-		return true;
+		});
 	}
 
 	void ProcessShutdown()
 	{
+		gInitThread.join();
 		gApp.reset();
 	}
 };
