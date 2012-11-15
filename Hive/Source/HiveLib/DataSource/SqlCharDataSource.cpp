@@ -395,3 +395,36 @@ bool SqlCharDataSource::recordLogin( string playerId, int characterId, int actio
 
 	return exRes;
 }
+
+Sqf::Value SqlCharDataSource::fetchObjectId( Int64 objectIdent )
+{
+	Sqf::Parameters retVal;
+	//get details from db
+	scoped_ptr<QueryResult> charDetRes(getDB()->PQuery(
+		"SELECT `ObjectID` FROM `Object_DATA` WHERE `ObjectUID`=%lld", objectIdent));
+
+	if (charDetRes)
+	{
+		int objectid = 0;
+		//get stuff from row
+		{
+			Field* fields = charDetRes->Fetch();
+			objectid = fields[0].GetInt32();
+		}
+		if(objectid != 0)
+		{
+			retVal.push_back(string("PASS"));
+			retVal.push_back(lexical_cast<string>(objectid));
+		}
+		else 
+		{
+			retVal.push_back(string("ERROR"));
+		}
+	}
+	else
+	{
+		retVal.push_back(string("ERROR"));
+	}
+
+	return retVal;
+}

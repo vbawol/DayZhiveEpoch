@@ -131,6 +131,13 @@ HiveExtApp::HiveExtApp(string suffixDir) : AppServer("HiveExt",suffixDir), _serv
 	handlers[306] = boost::bind(&HiveExtApp::vehicleDamaged,this,_1);
 	handlers[307] = boost::bind(&HiveExtApp::getDateTime,this,_1);
 	handlers[308] = boost::bind(&HiveExtApp::objectPublish,this,_1);
+
+	// Custom to just return db ID for object UID
+	handlers[388] = boost::bind(&HiveExtApp::loadObjectID,this,_1);
+	// For traders 
+	handlers[399] = boost::bind(&HiveExtApp::loadTraderDetails,this,_1);
+	// End custom
+
 	handlers[309] = boost::bind(&HiveExtApp::objectInventory,this,_1,true);
 	handlers[310] = boost::bind(&HiveExtApp::objectDelete,this,_1,true);
 	handlers[399] = boost::bind(&HiveExtApp::serverShutdown,this,_1);		//Shut down the hiveExt instance
@@ -403,6 +410,34 @@ Sqf::Value HiveExtApp::loadCharacterDetails( Sqf::Parameters params )
 	int characterId = Sqf::GetIntAny(params.at(0));
 	
 	return _charData->fetchCharacterDetails(characterId);
+}
+
+Sqf::Value HiveExtApp::loadObjectID( Sqf::Parameters params )
+{
+	Int64 ObjectUID = Sqf::GetBigInt(params.at(0));
+	return _charData->fetchObjectId(ObjectUID);
+}
+
+Sqf::Value HiveExtApp::loadTraderDetails( Sqf::Parameters params )
+{
+	if (_srvObjects.empty())
+	{
+		int characterId = Sqf::GetIntAny(params.at(0));
+
+		_objData->populateTraderObjects(characterId, _srvObjects);
+
+		Sqf::Parameters retVal;
+		retVal.push_back(string("ObjectStreamStart"));
+		retVal.push_back(static_cast<int>(_srvObjects.size()));
+		return retVal;
+	}
+	else
+	{
+		Sqf::Parameters retVal = _srvObjects.front();
+		_srvObjects.pop();
+
+		return retVal;
+	}
 }
 
 Sqf::Value HiveExtApp::recordCharacterLogin( Sqf::Parameters params )

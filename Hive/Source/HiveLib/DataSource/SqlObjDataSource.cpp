@@ -166,6 +166,36 @@ void SqlObjDataSource::populateObjects( int serverId, ServerObjectsQueue& queue 
 	}
 }
 
+void SqlObjDataSource::populateTraderObjects( int characterId, ServerObjectsQueue& queue )
+{	
+	scoped_ptr<QueryResult> worldObjsRes(getDB()->PQuery("SELECT `item`, `qty`, `buy`, `sell`, `order`, `tid`, `afile` FROM `Traders_DATA` WHERE `tid`=%d", characterId));
+	if (worldObjsRes) do
+	{
+		Field* fields = worldObjsRes->Fetch();
+		Sqf::Parameters objParams;
+		objParams.push_back(string("TRD"));
+		
+		// `item` varchar(255) NOT NULL COMMENT '[Class Name,1 = CfgMagazines | 2 = Vehicle | 3 = Weapon]',
+		// `qty` int(8) NOT NULL COMMENT 'amount in stock available to buy',
+		// `buy`  varchar(255) NOT NULL COMMENT '[[Qty,Class,Type],]',
+		// `sell`  varchar(255) NOT NULL COMMENT '[[Qty,Class,Type],]',
+		// `order` int(2) NOT NULL DEFAULT '0' COMMENT '# sort order for addAction menu',
+		// `tid` int(8) NOT NULL COMMENT 'Trader Menu ID',
+		// `afile` varchar(64) NOT NULL DEFAULT 'trade_items',
+
+		//get stuff from row
+		objParams.push_back(lexical_cast<Sqf::Value>(fields[0].GetString()));  // item
+		objParams.push_back(fields[1].GetInt32()); // qty
+		objParams.push_back(lexical_cast<Sqf::Value>(fields[2].GetString()));  // buy
+		objParams.push_back(lexical_cast<Sqf::Value>(fields[3].GetString()));  // sell
+		objParams.push_back(fields[4].GetInt32()); // order
+		objParams.push_back(fields[5].GetInt32()); // tid
+		objParams.push_back(fields[6].GetCppString()); // afile
+
+		queue.push(objParams);
+	} while(worldObjsRes->NextRow());
+}
+
 bool SqlObjDataSource::updateObjectInventory( int serverId, Int64 objectIdent, bool byUID, const Sqf::Value& inventory )
 {
 	unique_ptr<SqlStatement> stmt;
