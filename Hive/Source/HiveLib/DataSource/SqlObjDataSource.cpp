@@ -154,6 +154,36 @@ void SqlObjDataSource::populateObjects( int serverId, ServerObjectsQueue& queue 
 	} while(worldObjsRes->NextRow());
 }
 
+void SqlObjDataSource::populateTraderObjects( int characterId, ServerObjectsQueue& queue )
+{	
+	scoped_ptr<QueryResult> worldObjsRes(getDB()->PQuery("SELECT `btype`, `stype`, `loc`, `name`, `qty`, `buy`, `bcurrency`, `sell`, `scurrency`, `menu`, `order`, `tid`, `afile`, `tname` FROM `Traders_DATA` WHERE `tid`=%d", characterId));
+	if (worldObjsRes) do
+	{
+		Field* fields = worldObjsRes->Fetch();
+		Sqf::Parameters objParams;
+		objParams.push_back(string("TRD"));
+		
+		//get stuff from row
+		objParams.push_back(fields[0].GetCppString()); // btype
+		objParams.push_back(fields[1].GetCppString()); // stype
+		objParams.push_back(fields[2].GetCppString()); // loc
+		objParams.push_back(fields[3].GetCppString()); // name
+		objParams.push_back(fields[4].GetInt32()); // qty
+		objParams.push_back(fields[5].GetInt32()); // buy
+		objParams.push_back(fields[6].GetCppString()); // bcurrency
+		objParams.push_back(fields[7].GetInt32()); // sell
+		objParams.push_back(fields[8].GetCppString()); // scurrency
+		objParams.push_back(fields[9].GetCppString()); // menu
+		objParams.push_back(fields[10].GetInt32()); // order
+		objParams.push_back(fields[11].GetInt32()); // tid
+		objParams.push_back(fields[12].GetCppString()); // afile
+		objParams.push_back(fields[13].GetCppString()); // tname
+
+
+		queue.push(objParams);
+	} while(worldObjsRes->NextRow());
+}
+
 bool SqlObjDataSource::updateObjectInventory( int serverId, Int64 objectIdent, bool byUID, const Sqf::Value& inventory )
 {
 	scoped_ptr<SqlStatement> stmt;
