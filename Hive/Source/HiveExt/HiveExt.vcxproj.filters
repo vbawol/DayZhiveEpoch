@@ -6,9 +6,5 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DirectHiveApp.h" />
-    <ClInclude Include="resource.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="Resource.rc" />
   </ItemGroup>
 </Project>

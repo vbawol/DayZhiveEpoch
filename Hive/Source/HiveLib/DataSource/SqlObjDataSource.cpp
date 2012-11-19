@@ -156,29 +156,29 @@ void SqlObjDataSource::populateObjects( int serverId, ServerObjectsQueue& queue 
 
 void SqlObjDataSource::populateTraderObjects( int characterId, ServerObjectsQueue& queue )
 {	
-	scoped_ptr<QueryResult> worldObjsRes(getDB()->PQuery("SELECT `btype`, `stype`, `loc`, `name`, `qty`, `buy`, `bcurrency`, `sell`, `scurrency`, `menu`, `order`, `tid`, `afile`, `tname` FROM `Traders_DATA` WHERE `tid`=%d", characterId));
+	scoped_ptr<QueryResult> worldObjsRes(getDB()->PQuery("SELECT `item`, `qty`, `buy`, `sell`, `order`, `tid`, `afile` FROM `Traders_DATA` WHERE `tid`=%d", characterId));
 	if (worldObjsRes) do
 	{
 		Field* fields = worldObjsRes->Fetch();
 		Sqf::Parameters objParams;
 		objParams.push_back(string("TRD"));
 		
-		//get stuff from row
-		objParams.push_back(fields[0].GetCppString()); // btype
-		objParams.push_back(fields[1].GetCppString()); // stype
-		objParams.push_back(fields[2].GetCppString()); // loc
-		objParams.push_back(fields[3].GetCppString()); // name
-		objParams.push_back(fields[4].GetInt32()); // qty
-		objParams.push_back(fields[5].GetInt32()); // buy
-		objParams.push_back(fields[6].GetCppString()); // bcurrency
-		objParams.push_back(fields[7].GetInt32()); // sell
-		objParams.push_back(fields[8].GetCppString()); // scurrency
-		objParams.push_back(fields[9].GetCppString()); // menu
-		objParams.push_back(fields[10].GetInt32()); // order
-		objParams.push_back(fields[11].GetInt32()); // tid
-		objParams.push_back(fields[12].GetCppString()); // afile
-		objParams.push_back(fields[13].GetCppString()); // tname
+		// `item` varchar(255) NOT NULL COMMENT '[Class Name,1 = CfgMagazines | 2 = Vehicle | 3 = Weapon]',
+		// `qty` int(8) NOT NULL COMMENT 'amount in stock available to buy',
+		// `buy`  varchar(255) NOT NULL COMMENT '[[Qty,Class,Type],]',
+		// `sell`  varchar(255) NOT NULL COMMENT '[[Qty,Class,Type],]',
+		// `order` int(2) NOT NULL DEFAULT '0' COMMENT '# sort order for addAction menu',
+		// `tid` int(8) NOT NULL COMMENT 'Trader Menu ID',
+		// `afile` varchar(64) NOT NULL DEFAULT 'trade_items',
 
+		//get stuff from row
+		objParams.push_back(lexical_cast<Sqf::Value>(fields[0].GetString()));  // item
+		objParams.push_back(fields[1].GetInt32()); // qty
+		objParams.push_back(lexical_cast<Sqf::Value>(fields[2].GetString()));  // buy
+		objParams.push_back(lexical_cast<Sqf::Value>(fields[3].GetString()));  // sell
+		objParams.push_back(fields[4].GetInt32()); // order
+		objParams.push_back(fields[5].GetInt32()); // tid
+		objParams.push_back(fields[6].GetCppString()); // afile
 
 		queue.push(objParams);
 	} while(worldObjsRes->NextRow());

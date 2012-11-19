@@ -65,9 +65,9 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>C:\Program Files %28x86%29\boost\boost_1_51;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Program Files %28x86%29\boost\boost_1_51\lib;$(LibraryPath)</LibraryPath>
-    <ExecutablePath>C:\Program Files %28x86%29\Git\bin;$(ExecutablePath)</ExecutablePath>
+    <IncludePath>D:\boost_1_51;$(IncludePath)</IncludePath>
+    <LibraryPath>D:\boost_1_51\lib;$(LibraryPath)</LibraryPath>
+    <ExecutablePath>F:\PortableAPPS\PortableGit\bin;$(ExecutablePath)</ExecutablePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
