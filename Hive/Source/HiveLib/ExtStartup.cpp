@@ -17,76 +17,13 @@
 */
 
 #include "ExtStartup.h"
-#include <boost/thread.hpp>
 
-namespace
-{
-	unique_ptr<HiveExtApp> gApp;
-	boost::thread gInitThread;
-};
-
-void CALLBACK RVExtension(char *output, int outputSize, const char* function)
-{
-	gInitThread.join();
-
-	if (gApp)
-	gApp->callExtension(function, output, outputSize);
-	else
-		memset(output,0,outputSize);
-}
-
-#include <fcntl.h>
-#include <io.h>
 #ifdef UNICODE
 #include <Poco/UnicodeConverter.h>
 #endif
 
 namespace
 {
-	void RedirectIOToConsole()
-	{
-		int hConHandle;
-		long lStdHandle;
-		CONSOLE_SCREEN_BUFFER_INFO coninfo;
-		FILE *fp;
-
-		// allocate a console for this app
-		AllocConsole();
-
-		// maximum mumber of lines the output console should have
-		const WORD MAX_CONSOLE_LINES = 500;
-
-		// set the screen buffer to be big enough to let us scroll text
-		GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE),	&coninfo);
-		coninfo.dwSize.Y = MAX_CONSOLE_LINES;
-		SetConsoleScreenBufferSize(GetStdHandle(STD_OUTPUT_HANDLE),	coninfo.dwSize);
-
-		// redirect unbuffered STDOUT to the console
-		lStdHandle = (long)GetStdHandle(STD_OUTPUT_HANDLE);
-		hConHandle = _open_osfhandle(lStdHandle, _O_TEXT);
-		fp = _fdopen( hConHandle, "w" );
-		*stdout = *fp;
-		setvbuf( stdout, NULL, _IONBF, 0 );
-
-		// redirect unbuffered STDIN to the console
-		lStdHandle = (long)GetStdHandle(STD_INPUT_HANDLE);
-		hConHandle = _open_osfhandle(lStdHandle, _O_TEXT);
-		fp = _fdopen( hConHandle, "r" );
-		*stdin = *fp;
-		setvbuf( stdin, NULL, _IONBF, 0 );
-
-		// redirect unbuffered STDERR to the console
-		lStdHandle = (long)GetStdHandle(STD_ERROR_HANDLE);
-		hConHandle = _open_osfhandle(lStdHandle, _O_TEXT);
-		fp = _fdopen( hConHandle, "w" );
-		*stderr = *fp;
-		setvbuf( stderr, NULL, _IONBF, 0 );
-
-		// make cout, wcout, cin, wcin, wcerr, cerr, wclog and clog
-		// point to console as well
-		std::ios::sync_with_stdio();
-	}
-
 #ifdef UNICODE
 #define GetCommandLineWut GetCommandLineW
 #define CommandLineToArgv CommandLineToArgvW
@@ -128,9 +65,11 @@ namespace
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/trim.hpp>
 
-namespace ExtStartup
+namespace
 {
-	void ProcessStartup(MakeAppFunction makeAppFunc)
+	ExtStartup::MakeAppFunction gMakeAppFunc;
+
+	unique_ptr<HiveExtApp> CreateApp()
 	{
 		LPTSTR* argv;
 		int argc;
@@ -152,40 +91,51 @@ namespace ExtStartup
 			serverFolder = rest;
 		}
 
-		RedirectIOToConsole();
+		unique_ptr<HiveExtApp> theApp(gMakeAppFunc(serverFolder));
 		{
-			std::wstring consoleTitle = TEXT("HiveExt Debug Monitor - ");
-			consoleTitle += std::wstring(serverFolder.begin(),serverFolder.end());
-			SetConsoleTitle(consoleTitle.c_str());
+			int appRes = theApp->run(argc, argv);
+			LocalFree(argv);
+
+			if (appRes == Poco::Util::Application::EXIT_IOERR)
+				MessageBox(NULL,TEXT("Error connecting to the service"),TEXT("Hive error"),MB_ICONERROR|MB_OK);
+			else if (appRes == Poco::Util::Application::EXIT_DATAERR)
+				MessageBox(NULL,TEXT("Error loading required resources"),TEXT("Hive error"),MB_ICONERROR|MB_OK);
+			else if (appRes != Poco::Util::Application::EXIT_OK)
+				MessageBox(NULL,TEXT("Unknown internal error"),TEXT("Hive error"),MB_ICONERROR|MB_OK);
+
+			if (appRes != Poco::Util::Application::EXIT_OK)
+				return nullptr;
+			else
+				theApp->enableAsyncLogging();
 		}
 
-		gApp.reset(makeAppFunc(serverFolder));
-		gInitThread = boost::thread([argc,argv]()
-		{
-		int appRes = gApp->run(argc, argv);
-		LocalFree(argv);
-		if (appRes == Poco::Util::Application::EXIT_IOERR)
-		{
-			MessageBox(NULL,TEXT("Error connecting to the service"),TEXT("Hive error"),MB_ICONERROR|MB_OK);
-				gApp.reset();
-		}
-		else if (appRes == Poco::Util::Application::EXIT_DATAERR)
-		{
-			MessageBox(NULL,TEXT("Error loading required resources"),TEXT("Hive error"),MB_ICONERROR|MB_OK);
-				gApp.reset();
-		}
-		else if (appRes != Poco::Util::Application::EXIT_OK)
-		{
-			MessageBox(NULL,TEXT("Unknown internal error"),TEXT("Hive error"),MB_ICONERROR|MB_OK);
-				gApp.reset();
-		}
-		});
-	}
-
-	void ProcessShutdown()
-	{
-		gInitThread.join();
-		gApp.reset();
+		return std::move(theApp);
 	}
 };
 
+namespace
+{
+	unique_ptr<HiveExtApp> gApp;
+};
+
+void ExtStartup::InitModule( MakeAppFunction makeAppFunc )
+{
+	gMakeAppFunc = std::move(makeAppFunc);
+}
+
+void ExtStartup::ProcessShutdown()
+{
+	gApp.reset();
+}
+
+void CALLBACK RVExtension(char *output, int outputSize, const char* function)
+{
+	if (!gApp)
+	{
+		gApp = CreateApp();
+		if (!gApp) //error during creation
+			ExitProcess(1);
+	}
+
+	gApp->callExtension(function, output, outputSize);
+}

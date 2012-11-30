@@ -18,20 +18,21 @@
 
 #pragma once
 
+#include "Shared/Common/Types.h"
 #include <Poco/Util/ServerApplication.h>
-#include <string>
 
 class AppServer: public Poco::Util::ServerApplication
 {
 public:
 	AppServer(std::string appName = "", std::string suffixDir = "") : appName(appName), appDir(suffixDir) {}
 	std::string getAppDir() { return appDir; }
+	void enableAsyncLogging();
 protected:
 	void initialize(Application& self) override;
 	void uninitialize() override;
 private:
 	void initConfig();
 	void initLogger();
-	std::string appDir;
 	std::string appName;
+	std::string appDir;
 };
