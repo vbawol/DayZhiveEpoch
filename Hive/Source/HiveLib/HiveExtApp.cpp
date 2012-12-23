@@ -75,6 +75,7 @@ HiveExtApp::HiveExtApp(string suffixDir) : AppServer("HiveExt",suffixDir), _serv
 	// Custom to just return db ID for object UID
 	handlers[388] = boost::bind(&HiveExtApp::loadObjectID,this,_1);
 	// For traders 
+	handlers[398] = boost::bind(&HiveExtApp::tradeObject,this,_1);
 	handlers[399] = boost::bind(&HiveExtApp::loadTraderDetails,this,_1);
 	// End custom
 	handlers[309] = boost::bind(&HiveExtApp::objectInventory,this,_1,true);
@@ -315,6 +316,13 @@ Sqf::Value HiveExtApp::loadObjectID( Sqf::Parameters params )
 	return _charData->fetchObjectId(ObjectUID);
 }
 
+Sqf::Value HiveExtApp::tradeObject( Sqf::Parameters params )
+{
+	int traderObjectId = Sqf::GetIntAny(params.at(0));
+	int action = Sqf::GetIntAny(params.at(1));
+	return _charData->fetchTraderObject(traderObjectId, action);
+}
+
 Sqf::Value HiveExtApp::recordCharacterLogin( Sqf::Parameters params )
 {
 	string playerId = Sqf::GetStringAny(params.at(0));
@@ -459,6 +467,7 @@ Sqf::Value HiveExtApp::playerDeath( Sqf::Parameters params )
 {
 	int characterId = Sqf::GetIntAny(params.at(0));
 	int duration = static_cast<int>(Sqf::GetDouble(params.at(1)));
+	int infected = Sqf::GetIntAny(params.at(2));
 	
-	return booleanReturn(_charData->killCharacter(characterId,duration));
+	return booleanReturn(_charData->killCharacter(characterId,duration,infected));
 }

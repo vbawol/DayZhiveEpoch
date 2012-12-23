@@ -71,7 +71,7 @@ Sqf::Value SqlCharDataSource::fetchCharacterInitial( string playerId, int server
 		"TIMESTAMPDIFF(MINUTE,`LastAte`,NOW()) as `MinsLastAte`, "
 		"TIMESTAMPDIFF(MINUTE,`LastDrank`,NOW()) as `MinsLastDrank`, "
 		"`Model` FROM `Character_DATA` WHERE `"+_idFieldName+"` = '%s' AND `Alive` = 1 ORDER BY `CharacterID` DESC LIMIT 1").c_str(), getDB()->escape(playerId).c_str());
-
+	int infected = 0;
 	bool newChar = false; //not a new char
 	int characterId = -1; //invalid charid
 	Sqf::Value worldSpace = Sqf::Parameters(); //empty worldspace
@@ -148,7 +148,7 @@ Sqf::Value SqlCharDataSource::fetchCharacterInitial( string playerId, int server
 		//try getting previous character info
 		{
 			auto prevCharRes = getDB()->queryParams(
-				("SELECT `Generation`, `Humanity`, `Model` FROM `Character_DATA` WHERE `"+_idFieldName+"` = '%s' AND `Alive` = 0 ORDER BY `CharacterID` DESC LIMIT 1").c_str(), getDB()->escape(playerId).c_str());
+				("SELECT `Generation`, `Humanity`, `Model`, `Infected` FROM `Character_DATA` WHERE `"+_idFieldName+"` = '%s' AND `Alive` = 0 ORDER BY `CharacterID` DESC LIMIT 1").c_str(), getDB()->escape(playerId).c_str());
 			if (prevCharRes && prevCharRes->fetchRow())
 			{
 				generation = prevCharRes->at(0).getInt32();
@@ -163,7 +163,7 @@ Sqf::Value SqlCharDataSource::fetchCharacterInitial( string playerId, int server
 				{
 					model = prevCharRes->at(2).getString();
 				}
-
+				infected = prevCharRes->at(3).getInt32();
 
 
 			}
@@ -217,10 +217,13 @@ Sqf::Value SqlCharDataSource::fetchCharacterInitial( string playerId, int server
 		retVal.push_back(inventory);
 		retVal.push_back(backpack);
 		retVal.push_back(survival);
+	} else {
+		retVal.push_back(infected);
 	}
 	retVal.push_back(model);
 	//hive interface version
 	retVal.push_back(0.96f);
+	
 
 	return retVal;
 }
@@ -377,10 +380,11 @@ bool SqlCharDataSource::initCharacter( int characterId, const Sqf::Value& invent
 	return exRes;
 }
 
-bool SqlCharDataSource::killCharacter( int characterId, int duration )
+bool SqlCharDataSource::killCharacter( int characterId, int duration, int infected )
 {
 	auto stmt = getDB()->makeStatement(_stmtKillCharacter, 
-		"UPDATE `Character_DATA` SET `Alive` = 0, `LastLogin` = DATE_SUB(CURRENT_TIMESTAMP, INTERVAL ? MINUTE) WHERE `CharacterID` = ? AND `Alive` = 1");
+		"UPDATE `Character_DATA` SET `Alive` = 0, `Infected` = ?, `LastLogin` = DATE_SUB(CURRENT_TIMESTAMP, INTERVAL ? MINUTE) WHERE `CharacterID` = ? AND `Alive` = 1");
+	stmt->addInt32(infected);
 	stmt->addInt32(duration);
 	stmt->addInt32(characterId);
 	bool exRes = stmt->execute();
@@ -432,3 +436,75 @@ Sqf::Value SqlCharDataSource::fetchObjectId( Int64 objectIdent )
 
 	return retVal;
 }
+
+Sqf::Value SqlCharDataSource::fetchTraderObject( int traderObjectId, int action)
+{
+	Sqf::Parameters retVal;
+	//get details from db
+
+	if(action == 0) { 
+		auto charDetRes = getDB()->queryParams(
+		"SELECT `qty` FROM `Traders_DATA` WHERE `id`=%d", traderObjectId);
+
+		if (charDetRes && charDetRes->fetchRow())
+		{
+			int qty = 0;
+			//get stuff from row	
+			qty = charDetRes->at(0).getInt32();
+	
+			if(qty != 0)
+			{
+		
+				auto stmt = getDB()->makeStatement(_stmtTradeObjectBuy, 
+					"UPDATE `Traders_DATA` SET qty = qty - 1 WHERE `id`= ?");
+				stmt->addInt32(traderObjectId);
+
+				bool exRes = stmt->directExecute();
+				if(exRes == true)
+				{
+					retVal.push_back(string("PASS"));
+					return retVal;
+				}
+				else 
+				{
+					retVal.push_back(string("ERROR"));
+					return retVal;
+				}	
+			
+
+			}
+			else 
+			{
+				retVal.push_back(string("ERROR"));
+				return retVal;
+			}
+		}
+		else
+		{
+			retVal.push_back(string("ERROR"));
+			return retVal;
+		}
+	} else {
+	
+		
+		auto stmt = getDB()->makeStatement(_stmtTradeObjectSell, 
+			"UPDATE `Traders_DATA` SET qty = qty + 1 WHERE `id`= ?");
+		stmt->addInt32(traderObjectId);
+
+		bool exRes = stmt->directExecute(); 
+		if(exRes == true)
+		{
+			retVal.push_back(string("PASS"));
+			return retVal;
+		}
+		else 
+		{
+			retVal.push_back(string("ERROR"));
+			return retVal;
+		}	
+
+	}
+
+}
+
+

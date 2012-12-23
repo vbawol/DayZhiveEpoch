@@ -72,8 +72,9 @@ private:
 	Sqf::Value loadCharacterDetails(Sqf::Parameters params);
 	
 	Sqf::Value loadTraderDetails(Sqf::Parameters params);
-	
+	Sqf::Value tradeObject(Sqf::Parameters params);
 	Sqf::Value loadObjectID(Sqf::Parameters params);
+
 	Sqf::Value recordCharacterLogin(Sqf::Parameters params);
 
 	Sqf::Value playerUpdate(Sqf::Parameters params);

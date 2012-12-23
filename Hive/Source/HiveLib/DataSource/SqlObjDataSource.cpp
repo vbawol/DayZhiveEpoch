@@ -162,14 +162,14 @@ void SqlObjDataSource::populateObjects( int serverId, ServerObjectsQueue& queue 
 void SqlObjDataSource::populateTraderObjects( int characterId, ServerObjectsQueue& queue )
 {	
 	
-	auto worldObjsRes = getDB()->queryParams("SELECT `item`, `qty`, `buy`, `sell`, `order`, `tid`, `afile` FROM `Traders_DATA` WHERE `tid`=%d", characterId);
+	auto worldObjsRes = getDB()->queryParams("SELECT `id`, `item`, `qty`, `buy`, `sell`, `order`, `tid`, `afile` FROM `Traders_DATA` WHERE `tid`=%d", characterId);
 
 	while (worldObjsRes->fetchRow())
 	{
 		auto row = worldObjsRes->fields();
 
 		Sqf::Parameters objParams;
-		objParams.push_back(string("TRD"));
+		objParams.push_back(row[0].getInt32());
 		
 		// `item` varchar(255) NOT NULL COMMENT '[Class Name,1 = CfgMagazines | 2 = Vehicle | 3 = Weapon]',
 		// `qty` int(8) NOT NULL COMMENT 'amount in stock available to buy',
@@ -180,13 +180,13 @@ void SqlObjDataSource::populateTraderObjects( int characterId, ServerObjectsQueu
 		// `afile` varchar(64) NOT NULL DEFAULT 'trade_items',
 
 		//get stuff from row
-		objParams.push_back(lexical_cast<Sqf::Value>(row[0].getString()));  // item
-		objParams.push_back(row[1].getInt32()); // qty
-		objParams.push_back(lexical_cast<Sqf::Value>(row[2].getString()));  // buy
-		objParams.push_back(lexical_cast<Sqf::Value>(row[3].getString()));  // sell
-		objParams.push_back(row[4].getInt32()); // order
-		objParams.push_back(row[5].getInt32()); // tid
-		objParams.push_back(row[6].getString()); // afile
+		objParams.push_back(lexical_cast<Sqf::Value>(row[1].getString()));  // item
+		objParams.push_back(row[2].getInt32()); // qty
+		objParams.push_back(lexical_cast<Sqf::Value>(row[3].getString()));  // buy
+		objParams.push_back(lexical_cast<Sqf::Value>(row[4].getString()));  // sell
+		objParams.push_back(row[5].getInt32()); // order
+		objParams.push_back(row[6].getInt32()); // tid
+		objParams.push_back(row[7].getString()); // afile
 
 		queue.push(objParams);
 	}
