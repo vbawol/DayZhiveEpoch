@@ -89,7 +89,7 @@
       </AdditionalDependencies>
     </Lib>
     <PreBuildEvent>
-      <Command>bash $(ProjectDir)version_gen.sh $(ProjectDir)Version.cpp.template $(ProjectDir)Version.cpp</Command>
+      <Command>python $(ProjectDir)version_gen.py $(ProjectDir)Version.cpp.template $(ProjectDir)Version.cpp</Command>
       <Message>Generating Git version file</Message>
     </PreBuildEvent>
   </ItemDefinitionGroup>
@@ -117,7 +117,7 @@
       </AdditionalDependencies>
     </Lib>
     <PreBuildEvent>
-      <Command>bash $(ProjectDir)version_gen.sh $(ProjectDir)Version.cpp.template $(ProjectDir)Version.cpp</Command>
+      <Command>python $(ProjectDir)version_gen.py $(ProjectDir)Version.cpp.template $(ProjectDir)Version.cpp</Command>
       <Message>Generating Git version file</Message>
     </PreBuildEvent>
   </ItemDefinitionGroup>
