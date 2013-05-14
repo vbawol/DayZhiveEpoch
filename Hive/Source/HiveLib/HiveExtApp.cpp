@@ -261,14 +261,14 @@ Sqf::Value HiveExtApp::objectPublish( Sqf::Parameters params )
 {
 	string className = boost::get<string>(params.at(1));
 	double damage = Sqf::GetDouble(params.at(2));
-	int characterId = Sqf::GetIntAny(params.at(3));
+	string playerUID = Sqf::GetStringAny(params.at(3));
 	Sqf::Value worldSpace = boost::get<Sqf::Parameters>(params.at(4));
 	Sqf::Value inventory = boost::get<Sqf::Parameters>(params.at(5));
 	Sqf::Value hitPoints = boost::get<Sqf::Parameters>(params.at(6));
 	double fuel = Sqf::GetDouble(params.at(7));
 	Int64 uniqueId = Sqf::GetBigInt(params.at(8));
 
-	return booleanReturn(_objData->createObject(getServerId(),className,damage,characterId,worldSpace,inventory,hitPoints,fuel,uniqueId));
+	return booleanReturn(_objData->createObject(getServerId(),className,damage,playerUID,worldSpace,inventory,hitPoints,fuel,uniqueId));
 }
 
 #include "DataSource/CharDataSource.h"
