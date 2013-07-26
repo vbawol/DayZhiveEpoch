@@ -88,6 +88,10 @@ HiveExtApp::HiveExtApp(string suffixDir) : AppServer("HiveExt",suffixDir), _serv
 	handlers[201] = boost::bind(&HiveExtApp::playerUpdate,this,_1);
 	handlers[202] = boost::bind(&HiveExtApp::playerDeath,this,_1);
 	handlers[203] = boost::bind(&HiveExtApp::playerInit,this,_1);
+	
+	// Custom procedures
+	handlers[998] = boost::bind(&HiveExtApp::customExecute, this, _1);
+	handlers[999] = boost::bind(&HiveExtApp::streamCustom, this, _1);
 }
 
 #include <boost/lexical_cast.hpp>
@@ -470,4 +474,34 @@ Sqf::Value HiveExtApp::playerDeath( Sqf::Parameters params )
 	int infected = Sqf::GetIntAny(params.at(2));
 	
 	return booleanReturn(_charData->killCharacter(characterId,duration,infected));
+}
+
+
+Sqf::Value HiveExtApp::streamCustom(Sqf::Parameters params)
+{
+	if (_custQueue.empty())
+	{
+		string query = Sqf::GetStringAny(params.at(0));
+		Sqf::Parameters rawParams = boost::get<Sqf::Parameters>(params.at(1));
+		_customData->populateQuery(query, rawParams, _custQueue);
+		Sqf::Parameters retVal;
+		retVal.push_back(string("CustomStreamStart"));
+		retVal.push_back(static_cast<int>(_custQueue.size()));
+
+		return retVal;
+	}
+	else
+	{
+		Sqf::Parameters retVal = _custQueue.front();
+		_custQueue.pop();
+
+		return retVal;
+	}
+}
+Sqf::Value HiveExtApp::customExecute(Sqf::Parameters params)
+{
+	string query = Sqf::GetStringAny(params.at(0));
+	Sqf::Parameters rawParams = boost::get<Sqf::Parameters>(params.at(1));
+
+	return _customData->customExecute(query, rawParams);
 }

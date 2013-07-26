@@ -12,10 +12,13 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DataSource\CharDataSource.h" />
+    <ClInclude Include="DataSource\CustDataSource.h" />
     <ClInclude Include="DataSource\DataSource.h" />
+    <ClInclude Include="DataSource\DataSourceCustom.h" />
     <ClInclude Include="DataSource\ObjDataSource.h" />
     <ClInclude Include="DataSource\SqlCharDataSource.h" />
     <ClInclude Include="DataSource\SqlDataSource.h" />
+    <ClInclude Include="DataSource\SqlDataSourceCustom.h" />
     <ClInclude Include="DataSource\SqlObjDataSource.h" />
     <ClInclude Include="ExtStartup.h" />
     <ClInclude Include="HiveExtApp.h" />
@@ -24,7 +27,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DataSource\CharDataSource.cpp" />
+    <ClCompile Include="DataSource\CustDataSource.cpp" />
     <ClCompile Include="DataSource\SqlCharDataSource.cpp" />
+    <ClCompile Include="DataSource\SqlDataSourceCustom.cpp" />
     <ClCompile Include="DataSource\SqlObjDataSource.cpp" />
     <ClCompile Include="ExtStartup.cpp" />
     <ClCompile Include="HiveExtApp.cpp" />
@@ -93,7 +98,7 @@
       </AdditionalDependencies>
     </Lib>
     <PreBuildEvent>
-      <Command>bash $(ProjectDir)version_gen.sh $(ProjectDir)Version.cpp.template $(ProjectDir)Version.cpp</Command>
+      <Command>bash "$(ProjectDir)version_gen.sh" "$(ProjectDir)Version.cpp.template" "$(ProjectDir)Version.cpp"</Command>
       <Message>Generating Git version file</Message>
     </PreBuildEvent>
   </ItemDefinitionGroup>
@@ -121,7 +126,7 @@
       </AdditionalDependencies>
     </Lib>
     <PreBuildEvent>
-      <Command>bash $(ProjectDir)version_gen.sh $(ProjectDir)Version.cpp.template $(ProjectDir)Version.cpp</Command>
+      <Command>bash "$(ProjectDir)version_gen.sh" "$(ProjectDir)Version.cpp.template" "$(ProjectDir)Version.cpp"</Command>
       <Message>Generating Git version file</Message>
     </PreBuildEvent>
   </ItemDefinitionGroup>
