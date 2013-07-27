@@ -23,13 +23,13 @@ DirectHiveApp::DirectHiveApp(string suffixDir) : HiveExtApp(suffixDir) {}
 #include "Shared/Library/Database/DatabaseLoader.h"
 #include "HiveLib/DataSource/SqlCharDataSource.h"
 #include "HiveLib/DataSource/SqlObjDataSource.h"
+#include "HiveLib/DataSource/SqlDataSourceCustom.h"
 
 bool DirectHiveApp::initialiseService()
 {
 	_charDb = DatabaseLoader::create(DatabaseLoader::DBTYPE_MYSQL);
 
 	Poco::Logger& dbLogger = Poco::Logger::get("Database");
-
 	string initString;
 	{
 		Poco::AutoPtr<Poco::Util::AbstractConfiguration> globalDBConf(config().createView("Database"));
@@ -52,6 +52,11 @@ bool DirectHiveApp::initialiseService()
 	}
 
 	Poco::AutoPtr<Poco::Util::AbstractConfiguration> objDBConf(config().createView("ObjectDB"));
+
+	{
+		_customData.reset(new SqlCustDataSource(logger(), _objDb));
+	}
+
 	bool useExternalObjDb = objDBConf->getBool("Use",false);
 	if (useExternalObjDb)
 	{

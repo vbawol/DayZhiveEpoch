@@ -24,6 +24,7 @@
 #include "Sqf.h"
 #include "DataSource/CharDataSource.h"
 #include "DataSource/ObjDataSource.h"
+#include "DataSource/DataSourceCustom.h"
 
 #include <boost/function.hpp>
 #include <boost/date_time.hpp>
@@ -48,6 +49,7 @@ protected:
 
 	unique_ptr<CharDataSource> _charData;
 	unique_ptr<ObjDataSource> _objData;
+	unique_ptr<CustomDataSource> _customData;
 private:
 	int _serverId;
 	boost::posix_time::time_duration _timeOffset;
@@ -59,6 +61,7 @@ private:
 	Sqf::Value getDateTime(Sqf::Parameters params);
 
 	ObjDataSource::ServerObjectsQueue _srvObjects;
+	CustomDataSource::CustomDataQueue _custQueue;
 	Sqf::Value streamObjects(Sqf::Parameters params);
 
 	Sqf::Value objectPublish(Sqf::Parameters params);
@@ -80,4 +83,8 @@ private:
 	Sqf::Value playerUpdate(Sqf::Parameters params);
 	Sqf::Value playerInit(Sqf::Parameters params);
 	Sqf::Value playerDeath(Sqf::Parameters params);
+
+	Sqf::Value streamCustom(Sqf::Parameters params);
+	
+	Sqf::Value customExecute(Sqf::Parameters params);
 };
