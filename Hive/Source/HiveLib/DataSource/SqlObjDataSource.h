@@ -30,7 +30,7 @@ public:
 	~SqlObjDataSource() {}
 
 	void populateObjects( int serverId, ServerObjectsQueue& queue ) override;
-	
+
 	void populateTraderObjects( int characterId, ServerObjectsQueue& queue ) override;
 
 	bool updateObjectInventory( int serverId, Int64 objectIdent, bool byUID, const Sqf::Value& inventory ) override;

@@ -141,7 +141,7 @@ void SqlObjDataSource::populateObjects( int serverId, ServerObjectsQueue& queue 
 				if (posInfo.is_initialized())
 					_logger.information("Reset ObjectID " + lexical_cast<string>(objectId) + " (" + row[1].getString() + ") from position " + lexical_cast<string>(*posInfo));
 
-			}			
+			}
 			objParams.push_back(worldSpace);
 
 			//Inventory can be NULL
@@ -165,15 +165,17 @@ void SqlObjDataSource::populateObjects( int serverId, ServerObjectsQueue& queue 
 		queue.push(objParams);
 	}
 }
-
 void SqlObjDataSource::populateTraderObjects( int characterId, ServerObjectsQueue& queue )
 {	
-	scoped_ptr<QueryResult> worldObjsRes(getDB()->PQuery("SELECT `item`, `qty`, `buy`, `sell`, `order`, `tid`, `afile` FROM `Traders_DATA` WHERE `tid`=%d", characterId));
-	if (worldObjsRes) do
+	
+	auto worldObjsRes = getDB()->queryParams("SELECT `id`, `item`, `qty`, `buy`, `sell`, `order`, `tid`, `afile` FROM `Traders_DATA` WHERE `tid`=%d", characterId);
+
+	while (worldObjsRes->fetchRow())
 	{
-		Field* fields = worldObjsRes->Fetch();
+		auto row = worldObjsRes->fields();
+
 		Sqf::Parameters objParams;
-		objParams.push_back(string("TRD"));
+		objParams.push_back(row[0].getInt32());
 		
 		// `item` varchar(255) NOT NULL COMMENT '[Class Name,1 = CfgMagazines | 2 = Vehicle | 3 = Weapon]',
 		// `qty` int(8) NOT NULL COMMENT 'amount in stock available to buy',
@@ -184,16 +186,16 @@ void SqlObjDataSource::populateTraderObjects( int characterId, ServerObjectsQueu
 		// `afile` varchar(64) NOT NULL DEFAULT 'trade_items',
 
 		//get stuff from row
-		objParams.push_back(lexical_cast<Sqf::Value>(fields[0].GetString()));  // item
-		objParams.push_back(fields[1].GetInt32()); // qty
-		objParams.push_back(lexical_cast<Sqf::Value>(fields[2].GetString()));  // buy
-		objParams.push_back(lexical_cast<Sqf::Value>(fields[3].GetString()));  // sell
-		objParams.push_back(fields[4].GetInt32()); // order
-		objParams.push_back(fields[5].GetInt32()); // tid
-		objParams.push_back(fields[6].GetCppString()); // afile
+		objParams.push_back(lexical_cast<Sqf::Value>(row[1].getString()));  // item
+		objParams.push_back(row[2].getInt32()); // qty
+		objParams.push_back(lexical_cast<Sqf::Value>(row[3].getString()));  // buy
+		objParams.push_back(lexical_cast<Sqf::Value>(row[4].getString()));  // sell
+		objParams.push_back(row[5].getInt32()); // order
+		objParams.push_back(row[6].getInt32()); // tid
+		objParams.push_back(row[7].getString()); // afile
 
 		queue.push(objParams);
-	} while(worldObjsRes->NextRow());
+	}
 }
 
 bool SqlObjDataSource::updateObjectInventory( int serverId, Int64 objectIdent, bool byUID, const Sqf::Value& inventory )
@@ -278,4 +280,3 @@ bool SqlObjDataSource::createObject( int serverId, const string& className, doub
 
 	return exRes;
 }
-

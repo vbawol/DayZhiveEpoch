@@ -135,12 +135,13 @@ HiveExtApp::HiveExtApp(string suffixDir) : AppServer("HiveExt",suffixDir), _serv
 	// Custom to just return db ID for object UID
 	handlers[388] = boost::bind(&HiveExtApp::loadObjectID,this,_1);
 	// For traders 
+	handlers[398] = boost::bind(&HiveExtApp::tradeObject,this,_1);
 	handlers[399] = boost::bind(&HiveExtApp::loadTraderDetails,this,_1);
 	// End custom
 
 	handlers[309] = boost::bind(&HiveExtApp::objectInventory,this,_1,true);
 	handlers[310] = boost::bind(&HiveExtApp::objectDelete,this,_1,true);
-	handlers[399] = boost::bind(&HiveExtApp::serverShutdown,this,_1);		//Shut down the hiveExt instance
+	handlers[400] = boost::bind(&HiveExtApp::serverShutdown,this,_1);		//Shut down the hiveExt instance
 	//player/character loads
 	handlers[101] = boost::bind(&HiveExtApp::loadPlayer,this,_1);
 	handlers[102] = boost::bind(&HiveExtApp::loadCharacterDetails,this,_1);
@@ -412,12 +413,6 @@ Sqf::Value HiveExtApp::loadCharacterDetails( Sqf::Parameters params )
 	return _charData->fetchCharacterDetails(characterId);
 }
 
-Sqf::Value HiveExtApp::loadObjectID( Sqf::Parameters params )
-{
-	Int64 ObjectUID = Sqf::GetBigInt(params.at(0));
-	return _charData->fetchObjectId(ObjectUID);
-}
-
 Sqf::Value HiveExtApp::loadTraderDetails( Sqf::Parameters params )
 {
 	if (_srvObjects.empty())
@@ -438,6 +433,19 @@ Sqf::Value HiveExtApp::loadTraderDetails( Sqf::Parameters params )
 
 		return retVal;
 	}
+}
+
+Sqf::Value HiveExtApp::loadObjectID( Sqf::Parameters params )
+{
+	Int64 ObjectUID = Sqf::GetBigInt(params.at(0));
+	return _charData->fetchObjectId(ObjectUID);
+}
+
+Sqf::Value HiveExtApp::tradeObject( Sqf::Parameters params )
+{
+	int traderObjectId = Sqf::GetIntAny(params.at(0));
+	int action = Sqf::GetIntAny(params.at(1));
+	return _charData->fetchTraderObject(traderObjectId, action);
 }
 
 Sqf::Value HiveExtApp::recordCharacterLogin( Sqf::Parameters params )
@@ -566,7 +574,7 @@ Sqf::Value HiveExtApp::playerUpdate( Sqf::Parameters params )
 	}
 
 	if (fields.size() > 0)
-		return ReturnBooleanStatus(_charData->updateCharacter(characterId,fields));
+		return ReturnBooleanStatus(_charData->updateCharacter(characterId,getServerId(),fields));
 
 	return ReturnBooleanStatus(true);
 }
@@ -584,8 +592,9 @@ Sqf::Value HiveExtApp::playerDeath( Sqf::Parameters params )
 {
 	int characterId = Sqf::GetIntAny(params.at(0));
 	int duration = static_cast<int>(Sqf::GetDouble(params.at(1)));
+	int infected = Sqf::GetIntAny(params.at(2));
 	
-	return ReturnBooleanStatus(_charData->killCharacter(characterId,duration));
+	return ReturnBooleanStatus(_charData->killCharacter(characterId,duration,infected));
 }
 
 namespace
