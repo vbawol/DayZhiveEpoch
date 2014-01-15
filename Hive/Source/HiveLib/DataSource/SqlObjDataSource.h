@@ -35,6 +35,7 @@ public:
 
 	bool updateObjectInventory( int serverId, Int64 objectIdent, bool byUID, const Sqf::Value& inventory ) override;
 	bool deleteObject( int serverId, Int64 objectIdent, bool byUID ) override;
+	bool updateDatestampObject( int serverId, Int64 objectIdent, bool byUID ) override;
 	bool updateVehicleMovement( int serverId, Int64 objectIdent, const Sqf::Value& worldspace, double fuel ) override;
 	bool updateVehicleStatus( int serverId, Int64 objectIdent, const Sqf::Value& hitPoints, double damage ) override;
 	bool createObject( int serverId, const string& className, double damage, int characterId, 
@@ -50,6 +51,8 @@ private:
 	SqlStatementID _stmtUpdateObjectByID;
 	SqlStatementID _stmtDeleteObjectByUID;
 	SqlStatementID _stmtDeleteObjectByID;
+	SqlStatementID _stmtUpdateDatestampObjectByUID;
+	SqlStatementID _stmtUpdateDatestampObjectByID;
 	SqlStatementID _stmtUpdateVehicleMovement;
 	SqlStatementID _stmtUpdateVehicleStatus;
 	SqlStatementID _stmtCreateObject;

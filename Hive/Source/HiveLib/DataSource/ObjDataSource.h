@@ -30,6 +30,7 @@ public:
 	virtual void populateTraderObjects( int characterId, ServerObjectsQueue& queue ) = 0;
 	virtual bool updateObjectInventory( int serverId, Int64 objectIdent, bool byUID, const Sqf::Value& inventory ) = 0;
 	virtual bool deleteObject( int serverId, Int64 objectIdent, bool byUID ) = 0;
+	virtual bool updateDatestampObject( int serverId, Int64 objectIdent, bool byUID ) = 0;
 	virtual bool updateVehicleMovement( int serverId, Int64 objectIdent, const Sqf::Value& worldspace, double fuel ) = 0;
 	virtual bool updateVehicleStatus( int serverId, Int64 objectIdent, const Sqf::Value& hitPoints, double damage ) = 0;
 	virtual bool createObject( int serverId, const string& className, double damage, int characterId, 

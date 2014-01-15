@@ -135,8 +135,8 @@ HiveExtApp::HiveExtApp(string suffixDir) : AppServer("HiveExt",suffixDir), _serv
 	// Custom to just return db ID for object UID
 	handlers[388] = boost::bind(&HiveExtApp::loadObjectID,this,_1);
 	// for maintain 
-	handlers[396] = boost::bind(&HiveExtApp::updateDatestampObject,this,_1,false);
-	handlers[397] = boost::bind(&HiveExtApp::updateDatestampObject,this,_1,true);
+	handlers[396] = boost::bind(&HiveExtApp::datestampObjectUpdate,this,_1,false);
+	handlers[397] = boost::bind(&HiveExtApp::datestampObjectUpdate,this,_1,true);
 	// For traders 
 	handlers[398] = boost::bind(&HiveExtApp::tradeObject,this,_1);
 	handlers[399] = boost::bind(&HiveExtApp::loadTraderDetails,this,_1);
@@ -357,6 +357,16 @@ Sqf::Value HiveExtApp::objectDelete( Sqf::Parameters params, bool byUID /*= fals
 
 	if (objectIdent != 0) //all the vehicles have objectUID = 0, so it would be bad to delete those
 		return ReturnBooleanStatus(_objData->deleteObject(getServerId(),objectIdent,byUID));
+
+	return ReturnBooleanStatus(true);
+}
+
+Sqf::Value HiveExtApp::datestampObjectUpdate(Sqf::Parameters params, bool byUID /*= false*/)
+{
+	Int64 objectIdent = Sqf::GetBigInt(params.at(0));
+
+	if (objectIdent != 0) //all the vehicles have objectUID = 0, so it would be bad to delete those
+		return ReturnBooleanStatus(_objData->updateDatestampObject(getServerId(), objectIdent, byUID));
 
 	return ReturnBooleanStatus(true);
 }

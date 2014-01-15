@@ -233,7 +233,7 @@ bool SqlObjDataSource::deleteObject( int serverId, Int64 objectIdent, bool byUID
 	return exRes;
 }
 
-bool SqlObjDataSource::updatedatestampObject( int serverId, Int64 objectIdent, bool byUID )
+bool SqlObjDataSource::updateDatestampObject( int serverId, Int64 objectIdent, bool byUID )
 {
 	unique_ptr<SqlStatement> stmt;
 	if (byUID)

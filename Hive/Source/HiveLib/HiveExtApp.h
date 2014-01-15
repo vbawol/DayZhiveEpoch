@@ -90,7 +90,7 @@ private:
 	Sqf::Value loadTraderDetails(Sqf::Parameters params);
 	Sqf::Value tradeObject(Sqf::Parameters params);
 	Sqf::Value loadObjectID(Sqf::Parameters params);
-	Sqf::Value updateDatestampObject(Sqf::Parameters params, bool byUID = false);
+	Sqf::Value datestampObjectUpdate(Sqf::Parameters params, bool byUID = false);
 	
 
 	Sqf::Value recordCharacterLogin(Sqf::Parameters params);
