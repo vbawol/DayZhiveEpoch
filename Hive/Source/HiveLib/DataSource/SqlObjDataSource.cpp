@@ -233,6 +233,23 @@ bool SqlObjDataSource::deleteObject( int serverId, Int64 objectIdent, bool byUID
 	return exRes;
 }
 
+bool SqlObjDataSource::updatedatestampObject( int serverId, Int64 objectIdent, bool byUID )
+{
+	unique_ptr<SqlStatement> stmt;
+	if (byUID)
+		stmt = getDB()->makeStatement(_stmtDeleteObjectByUID, "UPDATE `"+_objTableName+"` SET `Datestamp` = CURRENT_TIMESTAMP WHERE `ObjectUID` = ? AND `Instance` = ?");
+	else
+		stmt = getDB()->makeStatement(_stmtDeleteObjectByID, "UPDATE `"+_objTableName+"` SET `Datestamp` = CURRENT_TIMESTAMP WHERE `ObjectID` = ? AND `Instance` = ?");
+
+	stmt->addInt64(objectIdent);
+	stmt->addInt32(serverId);
+
+	bool exRes = stmt->execute();
+	poco_assert(exRes == true);
+
+	return exRes;
+}
+
 bool SqlObjDataSource::updateVehicleMovement( int serverId, Int64 objectIdent, const Sqf::Value& worldspace, double fuel )
 {
 	auto stmt = getDB()->makeStatement(_stmtUpdateVehicleMovement, "UPDATE `"+_objTableName+"` SET `Worldspace` = ? , `Fuel` = ? WHERE `ObjectID` = ?  AND `Instance` = ?");
