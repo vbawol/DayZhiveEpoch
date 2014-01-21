@@ -71,8 +71,6 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>C:\Development\Libraries\boost_1_55_0\include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Development\Libraries\boost_1_55_0\lib\x86\v120\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
