@@ -237,9 +237,9 @@ bool SqlObjDataSource::updateDatestampObject( int serverId, Int64 objectIdent, b
 {
 	unique_ptr<SqlStatement> stmt;
 	if (byUID)
-		stmt = getDB()->makeStatement(_stmtUpdateDatestampObjectByUID, "UPDATE `" + _objTableName + "` SET `Datestamp` = CURRENT_TIMESTAMP WHERE `ObjectUID` = ? AND `Instance` = ?");
+		stmt = getDB()->makeStatement(_stmtUpdateDatestampObjectByUID, "UPDATE `" + _objTableName + "` SET `Datestamp` = CURRENT_TIMESTAMP, `Damage` = 0 WHERE `ObjectUID` = ? AND `Instance` = ?");
 	else
-		stmt = getDB()->makeStatement(_stmtUpdateDatestampObjectByID, "UPDATE `" + _objTableName + "` SET `Datestamp` = CURRENT_TIMESTAMP WHERE `ObjectID` = ? AND `Instance` = ?");
+		stmt = getDB()->makeStatement(_stmtUpdateDatestampObjectByID, "UPDATE `" + _objTableName + "` SET `Datestamp` = CURRENT_TIMESTAMP, `Damage` = 0 WHERE `ObjectID` = ? AND `Instance` = ?");
 
 	stmt->addInt64(objectIdent);
 	stmt->addInt32(serverId);
