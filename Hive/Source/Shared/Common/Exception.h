@@ -62,3 +62,4 @@ class API CLS: public BASE																				\
 
 #define POCO_DEFINE_EXCEPTION(API, CLS, BASE, NAME) \
 	POCO_DEFINE_EXCEPTION_CODE(API, CLS, BASE, 0, NAME)
+

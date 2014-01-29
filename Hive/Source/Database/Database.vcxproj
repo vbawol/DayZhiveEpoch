@@ -15,9 +15,7 @@
     <ClInclude Include="Database.h" />
     <ClInclude Include="Field.h" />
     <ClInclude Include="Implementation\ConcreteDatabase.h" />
-    <ClInclude Include="Implementation\DatabaseMysql.h" />
     <ClInclude Include="Implementation\QueryResultImpl.h" />
-    <ClInclude Include="Implementation\QueryResultMysql.h" />
     <ClInclude Include="Implementation\RetrySqlOp.h" />
     <ClInclude Include="Implementation\SqlConnection.h" />
     <ClInclude Include="Implementation\SqlDelayThread.h" />
@@ -25,27 +23,25 @@
     <ClInclude Include="Implementation\SqlPreparedStatement.h" />
     <ClInclude Include="Implementation\SqlStatementImpl.h" />
     <ClInclude Include="QueryResult.h" />
-    <ClInclude Include="resource.h" />
     <ClInclude Include="SqlStatement.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Implementation\ConcreteDatabase.cpp" />
-    <ClCompile Include="Implementation\DatabaseMysql.cpp" />
-    <ClCompile Include="Implementation\QueryResultMysql.cpp" />
     <ClCompile Include="Implementation\SqlConnection.cpp" />
     <ClCompile Include="Implementation\SqlDelayThread.cpp" />
     <ClCompile Include="Implementation\SqlOperations.cpp" />
     <ClCompile Include="Implementation\SqlPreparedStatement.cpp" />
     <ClCompile Include="Implementation\SqlStatementImpl.cpp" />
-    <ClCompile Include="Manifest.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Shared\Shared.vcxproj">
       <Project>{92c57338-e848-422b-8e81-6f6d11671750}</Project>
+      <Private>true</Private>
+      <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
+      <CopyLocalSatelliteAssemblies>false</CopyLocalSatelliteAssemblies>
+      <LinkLibraryDependencies>true</LinkLibraryDependencies>
+      <UseLibraryDependencyInputs>false</UseLibraryDependencyInputs>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="Resource.rc" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{E0E04F80-0DB4-4946-B956-4BCA754DAB71}</ProjectGuid>
@@ -54,42 +50,41 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\DynamicLib.Debug.props" />
-    <Import Project="..\Poco.props" />
-    <Import Project="..\TBB.props" />
+    <Import Project="$(SolutionDir)StaticLib.Debug.props" />
+    <Import Project="$(SolutionDir)..\..\Dependencies\Poco.props" />
+    <Import Project="$(SolutionDir)..\..\Dependencies\TBB.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\DynamicLib.Release.props" />
-    <Import Project="..\Poco.props" />
-    <Import Project="..\TBB.props" />
+    <Import Project="$(SolutionDir)StaticLib.Release.props" />
+    <Import Project="$(SolutionDir)..\..\Dependencies\Poco.props" />
+    <Import Project="$(SolutionDir)..\..\Dependencies\TBB.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>C:\Program Files %28x86%29\boost\boost_1_51;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Program Files %28x86%29\boost\boost_1_51\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\Development\Libraries\boost_1_55_0\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Development\Libraries\boost_1_55_0\lib\x86\v120\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>D:\boost_1_51;$(IncludePath)</IncludePath>
-    <LibraryPath>D:\boost_1_51\lib;$(LibraryPath)</LibraryPath>
-    <ExecutablePath>F:\PortableAPPS\PortableGit\bin;$(ExecutablePath)</ExecutablePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -97,15 +92,15 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>MYSQL_ENABLED;DATABASE_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>DATABASE_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
-      <AdditionalIncludeDirectories>..\..\..\Dependencies10\MySQL\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)..\..\Dependencies10\MySQL\lib\x86\debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>mysqlclient.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent />
     <PostBuildEvent />
@@ -120,17 +115,17 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>MYSQL_ENABLED;DATABASE_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>DATABASE_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
-      <AdditionalIncludeDirectories>..\..\..\Dependencies10\MySQL\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>$(SolutionDir)..\..\Dependencies10\MySQL\lib\x86\release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>mysqlclient.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent />
     <PostBuildEvent />

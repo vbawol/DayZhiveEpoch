@@ -116,6 +116,16 @@ bool SqlConnection::executeStmt( const SqlStatementID& stId, const SqlStmtParame
 	}
 }
 
+unique_ptr<QueryNamedResult> SqlConnection::namedQuery( const char* sql )
+{
+	unique_ptr<QueryResult> realRes = this->query(sql);
+	if (!realRes)
+		return nullptr;
+
+	//fetches the field names in it's constructor, and wraps nextResult to keep them updated
+	return unique_ptr<QueryNamedResult>(new QueryNamedResult(std::move(realRes)));
+}
+
 size_t SqlConnection::escapeString( char* to, const char* from, size_t length ) const
 {
 	strncpy(to,from,length); 
@@ -124,17 +134,17 @@ size_t SqlConnection::escapeString( char* to, const char* from, size_t length ) 
 
 bool SqlConnection::transactionStart()
 {
-	return true;
+	return false;
 }
 
 bool SqlConnection::transactionCommit()
 {
-	return true;
+	return false;
 }
 
 bool SqlConnection::transactionRollback()
 {
-	return true;
+	return false;
 }
 
 void SqlConnection::StmtHolder::clear()

@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2009-2012 Rajko Stojadinovic <http://github.com/rajkosto/hive>
+* Copyright (C) 2009-2013 Rajko Stojadinovic <http://github.com/rajkosto/hive>
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -22,92 +22,158 @@
 #include "Shared/Library/SharedLibraryLoader.h"
 #include <Poco/Util/AbstractConfiguration.h>
 #include <Poco/String.h>
-#include <Poco/NumberFormatter.h>
-#include <Poco/Format.h>
 
 namespace
 {
-	extern const char libName[] = "Database" ; 
-	typedef SharedLibraryLoader<Database, libName> LibraryType;
+	typedef SharedLibraryLoader<Database> LibraryType;
 	static Poco::SingletonHolder<LibraryType> holder;
 }
 
-shared_ptr<Database> DatabaseLoader::create(DBType dbType)
+string DatabaseLoader::GetDbTypeFromConfig( Poco::Util::AbstractConfiguration* dbConfig )
 {
-	std::string dbTypeStr;
-	switch (dbType)
-	{
-	case DBTYPE_MYSQL:
-		dbTypeStr = "DatabaseMysql";
-		break;
-	}
+	string dbTypeStr;
 
-	if (!holder.get()->canCreate(dbTypeStr))
-		throw CreationError(string("Unimplemented database type: ") + dbTypeStr);
+	if (dbConfig->has("Type"))
+		dbTypeStr = dbConfig->getString("Type");
+	else if (dbConfig->has("Provider"))
+		dbTypeStr = dbConfig->getString("Provider");
+	else if (dbConfig->has("Engine"))
+		dbTypeStr = dbConfig->getString("Engine");
+	else
+		dbTypeStr = "MySql";
 
-	return shared_ptr<Database>(holder.get()->create(dbTypeStr));
+	Poco::trimInPlace(dbTypeStr);
+
+	if (dbTypeStr.length() < 1)
+		throw DatabaseLoader::CreationError(string("Unspecified DB type"));
+
+	return dbTypeStr;
 }
 
-namespace
+#include <boost/algorithm/string/predicate.hpp>
+
+string DatabaseLoader::GetDbModuleName( string dbType, bool physicalName )
 {
-	bool GetDBTypeFromConfig(Poco::Util::AbstractConfiguration* dbConfig, DatabaseLoader::DBType& outType)
+	if (boost::icontains(dbType,"mysql"))
+		dbType = "MySql";
+	else if (boost::icontains(dbType,"postgre"))
+		dbType = "Postgre";
+
+	string modName = "Database"+dbType;
+	if (physicalName)
+		modName += Poco::SharedLibrary::suffix();
+
+	return modName;
+}
+
+bool DatabaseLoader::GetVersionOfModule( const string& moduleName, UInt32& outMajor, UInt32& outMinor, UInt32& outRev, UInt32& outBld )
+{
+	std::wstring fileName;
 	{
-		string dbTypeStr;
-		if (dbConfig->has("Type"))
-			dbTypeStr = dbConfig->getString("Type");
-		else if (dbConfig->has("Provider"))
-			dbTypeStr = dbConfig->getString("Provider");
-		else if (dbConfig->has("Engine"))
-			dbTypeStr = dbConfig->getString("Engine");
-		else
-			dbTypeStr = "MySQL";
-
-		Poco::toLowerInPlace(dbTypeStr);
-
-		DatabaseLoader::DBType dbTypeNum;
-		if (dbTypeStr.find("mysql") != string::npos)
-			dbTypeNum = DatabaseLoader::DBTYPE_MYSQL;
-		else
+		WCHAR fullPath[MAX_PATH];
+		HMODULE ourModule = GetModuleHandleA(moduleName.c_str());
+		if (ourModule == NULL)
 			return false;
 
-		outType = dbTypeNum;
-		return true;
+		GetModuleFileNameW(ourModule,fullPath,MAX_PATH);
+		fileName = fullPath;
 	}
-};
 
-shared_ptr<Database> DatabaseLoader::create( Poco::Util::AbstractConfiguration* dbConfig )
-{
-	DBType dbTypeNum;
-	if (!GetDBTypeFromConfig(dbConfig,dbTypeNum))
-		throw CreationError(string("Unrecognised DB type"));
+	size_t verSize = GetFileVersionInfoSizeW(fileName.c_str(),NULL);
+	if (verSize < 1)
+		return false;
 
-	return create(dbTypeNum);
+	vector<UInt8> fileVerBuf(verSize);
+	if (!GetFileVersionInfoW(fileName.c_str(),0,fileVerBuf.size(),&fileVerBuf[0]))
+		return false;
+
+	VS_FIXEDFILEINFO* fileInfo = NULL;
+	size_t infoLen = 0;
+	if (!VerQueryValue(&fileVerBuf[0],L"\\",(LPVOID*)&fileInfo,&infoLen))
+		return false;
+	if (!fileInfo || infoLen < 1)
+		return false;
+
+	outMajor	= HIWORD(fileInfo->dwFileVersionMS);
+	outMinor	= LOWORD(fileInfo->dwFileVersionMS);
+	outRev		= HIWORD(fileInfo->dwFileVersionLS);
+	outBld		= LOWORD(fileInfo->dwFileVersionLS);
+
+	return true;
 }
 
-string DatabaseLoader::makeInitString(Poco::Util::AbstractConfiguration* dbConfig, const string& defUser, const string& defPass, const string& defDbName, const string& defDbHost)
+bool DatabaseLoader::IsVersionCompatible( const UInt32* wantedVer, const UInt32* gotVer )
 {
-	string host = dbConfig->getString("Host",defDbHost);
+	if (gotVer[0] != wantedVer[0])
+		return false;
+	if (gotVer[1] != wantedVer[1])
+		return false;
+	if (gotVer[2] != wantedVer[2])
+		return false;
+	if (gotVer[3] < wantedVer[3])
+		return false;
 
-	DBType dbTypeNum;
-	string socket_or_port;
-	if (dbConfig->has("Port"))
-		socket_or_port = Poco::NumberFormatter::format(dbConfig->getInt("Port"));
-	else if (dbConfig->has("Socket"))
-		socket_or_port = dbConfig->getString("Socket");
-	else if (GetDBTypeFromConfig(dbConfig,dbTypeNum))
+	return true;
+}
+
+shared_ptr<Database> DatabaseLoader::Create(const string& dbType)
+{
+	const string moduleName = GetDbModuleName(dbType);
+	try
 	{
-		if (dbTypeNum == DBTYPE_MYSQL)
-			socket_or_port = "3306";
+		return shared_ptr<Database>(holder.get()->create(moduleName));
 	}
+	catch (const Poco::NotFoundException&)
+	{
+		try
+		{
+			holder.get()->loadLibrary(moduleName);
+			
+			UInt32 dbVerNum[4];	
+			const string fullLibName = GetDbModuleName(dbType,true);					
+			if (!GetVersionOfModule(fullLibName,dbVerNum[0],dbVerNum[1],dbVerNum[2],dbVerNum[3]))
+				throw CreationError("Unable to get "+moduleName+" module version info");
 
-	string username = dbConfig->getString("Username",defUser);
-	string password = dbConfig->getString("Password",defPass);
-	string database = dbConfig->getString("Database",defDbName);
+			string wantedDbVerStr = Poco::format("%u.%u.%u.%u or higher, but lower than ",
+				REQUIRED_DB_VERSION_NUM[0],REQUIRED_DB_VERSION_NUM[1],REQUIRED_DB_VERSION_NUM[2],REQUIRED_DB_VERSION_NUM[3]);
+			wantedDbVerStr += Poco::format("%u.%u.%u.0",REQUIRED_DB_VERSION_NUM[0],REQUIRED_DB_VERSION_NUM[1],REQUIRED_DB_VERSION_NUM[2]+1);
 
-	return DatabaseLoader::makeInitString(host,socket_or_port,username,password,database);
+			if (!IsVersionCompatible(REQUIRED_DB_VERSION_NUM,dbVerNum))
+			{
+				throw CreationError(Poco::format(moduleName+" module is incompatible (%u.%u.%u.%u). Replace it with a compatible version (%s)",
+					dbVerNum[0],dbVerNum[1],dbVerNum[2],dbVerNum[3],wantedDbVerStr));
+			}
+
+			return shared_ptr<Database>(holder.get()->create(moduleName));
+		}
+		catch (const Poco::LibraryLoadException&) { throw CreationError("Error loading database module: "+moduleName); }
+		catch (const Poco::NotFoundException&) { throw CreationError("Unimplemented database type: "+dbType); }
+	}
 }
 
-string DatabaseLoader::makeInitString(const string& host, const string& socket_or_port, const string& username, const string& password, const string& database)
+shared_ptr<Database> DatabaseLoader::Create( Poco::Util::AbstractConfiguration* dbConfig )
 {
-	return Poco::format("%s;%s;%s;%s;%s",host,socket_or_port,username,password,database);
+	return Create(GetDbTypeFromConfig(dbConfig));
 }
+
+Database::KeyValueColl DatabaseLoader::MakeConnParams(Poco::Util::AbstractConfiguration* dbConfig)
+{
+	Database::KeyValueColl keyVals;
+	{
+		vector<string> keys;
+		dbConfig->keys(keys);
+
+		for (auto it=keys.begin(); it!=keys.end(); ++it)
+		{
+			string value = dbConfig->getString(*it);
+			Poco::trimInPlace(value);
+			string keyStr = std::move(*it);
+			Poco::toLowerInPlace(keyStr);
+			keyVals.insert(std::make_pair(std::move(keyStr),std::move(value)));
+		}
+	}	
+
+	return keyVals;
+}
+
+

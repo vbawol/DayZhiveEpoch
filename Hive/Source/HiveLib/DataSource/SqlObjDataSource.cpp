@@ -18,6 +18,7 @@
 
 #include "SqlObjDataSource.h"
 #include "Database/Database.h"
+#include <inttypes.h>
 
 #include <boost/format.hpp>
 #include <boost/lexical_cast.hpp>
@@ -77,10 +78,10 @@ SqlObjDataSource::SqlObjDataSource( Poco::Logger& logger, shared_ptr<Database> d
 	static const string defaultTable = "Object_DATA"; 
 	if (conf != NULL)
 	{
-	_objTableName = getDB()->escape(conf->getString("Table",defaultTable));
-	_cleanupPlacedDays = conf->getInt("CleanupPlacedAfterDays",6);
-	_vehicleOOBReset = conf->getBool("ResetOOBVehicles",false);
-}
+		_objTableName = getDB()->escape(conf->getString("Table",defaultTable));
+		_cleanupPlacedDays = conf->getInt("CleanupPlacedAfterDays",6);
+		_vehicleOOBReset = conf->getBool("ResetOOBVehicles",false);
+	}
 	else
 	{
 		_objTableName = defaultTable;
@@ -97,12 +98,13 @@ void SqlObjDataSource::populateObjects( int serverId, ServerObjectsQueue& queue 
 			" AND `ObjectUID` <> 0 AND `CharacterID` <> 0" +
 			" AND `Datestamp` < DATE_SUB(CURRENT_TIMESTAMP, INTERVAL "+lexical_cast<string>(_cleanupPlacedDays)+" DAY)" +
 			" AND ( (`Inventory` IS NULL) OR (`Inventory` = '[]') )";
+
 		int numCleaned = 0;
 		{
 			auto numObjsToClean = getDB()->query(("SELECT COUNT(*) "+commonSql).c_str());
 			if (numObjsToClean && numObjsToClean->fetchRow())
 				numCleaned = numObjsToClean->at(0).getInt32();
-			}
+		}
 		if (numCleaned > 0)
 		{
 			_logger.information("Removing " + lexical_cast<string>(numCleaned) + " empty placed objects older than " + lexical_cast<string>(_cleanupPlacedDays) + " days");
@@ -114,10 +116,15 @@ void SqlObjDataSource::populateObjects( int serverId, ServerObjectsQueue& queue 
 	}
 	
 	auto worldObjsRes = getDB()->queryParams("SELECT `ObjectID`, `Classname`, `CharacterID`, `Worldspace`, `Inventory`, `Hitpoints`, `Fuel`, `Damage` FROM `%s` WHERE `Instance`=%d AND `Classname` IS NOT NULL", _objTableName.c_str(), serverId);
-
+	if (!worldObjsRes)
+	{
+		_logger.error("Failed to fetch objects from database");
+		return;
+	}
 	while (worldObjsRes->fetchRow())
 	{
 		auto row = worldObjsRes->fields();
+
 		Sqf::Parameters objParams;
 		objParams.push_back(string("OBJ"));
 
@@ -150,7 +157,7 @@ void SqlObjDataSource::populateObjects( int serverId, ServerObjectsQueue& queue 
 			objParams.push_back(row[6].getDouble());
 			objParams.push_back(row[7].getDouble());
 		}
-		catch (bad_lexical_cast)
+		catch (const bad_lexical_cast&)
 		{
 			_logger.error("Skipping ObjectID " + lexical_cast<string>(objectId) + " load because of invalid data in db");
 			continue;
@@ -227,6 +234,23 @@ bool SqlObjDataSource::deleteObject( int serverId, Int64 objectIdent, bool byUID
 	return exRes;
 }
 
+bool SqlObjDataSource::updateDatestampObject( int serverId, Int64 objectIdent, bool byUID )
+{
+	unique_ptr<SqlStatement> stmt;
+	if (byUID)
+		stmt = getDB()->makeStatement(_stmtUpdateDatestampObjectByUID, "UPDATE `" + _objTableName + "` SET `Datestamp` = CURRENT_TIMESTAMP, `Damage` = '0' WHERE `ObjectUID` = ? AND `Instance` = ?");
+	else
+		stmt = getDB()->makeStatement(_stmtUpdateDatestampObjectByID, "UPDATE `" + _objTableName + "` SET `Datestamp` = CURRENT_TIMESTAMP, `Damage` = '0' WHERE `ObjectID` = ? AND `Instance` = ?");
+
+	stmt->addInt64(objectIdent);
+	stmt->addInt32(serverId);
+
+	bool exRes = stmt->execute();
+	poco_assert(exRes == true);
+
+	return exRes;
+}
+
 bool SqlObjDataSource::updateVehicleMovement( int serverId, Int64 objectIdent, const Sqf::Value& worldspace, double fuel )
 {
 	auto stmt = getDB()->makeStatement(_stmtUpdateVehicleMovement, "UPDATE `"+_objTableName+"` SET `Worldspace` = ? , `Fuel` = ? WHERE `ObjectID` = ?  AND `Instance` = ?");
@@ -273,4 +297,34 @@ bool SqlObjDataSource::createObject( int serverId, const string& className, doub
 	poco_assert(exRes == true);
 
 	return exRes;
+}
+
+Sqf::Value SqlObjDataSource::fetchObjectId( int serverId, Int64 objectIdent )
+{
+	Sqf::Parameters retVal;
+	//get details from db
+	auto worldObjsRes = getDB()->queryParams("SELECT `ObjectID` FROM `%s` WHERE `Instance` = %d AND `ObjectUID` = %"PRIu64"", _objTableName.c_str(), serverId, objectIdent);
+
+	if (worldObjsRes && worldObjsRes->fetchRow())
+	{
+		int objectid = 0;
+		//get stuff from row
+		objectid = worldObjsRes->at(0).getInt32();
+
+		if (objectid != 0)
+		{
+			retVal.push_back(string("PASS"));
+			retVal.push_back(lexical_cast<string>(objectid));
+		}
+		else
+		{
+			retVal.push_back(string("ERROR"));
+		}
+	}
+	else
+	{
+		retVal.push_back(string("ERROR"));
+	}
+
+	return retVal;
 }

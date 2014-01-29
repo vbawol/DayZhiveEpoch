@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2009-2012 Rajko Stojadinovic <http://github.com/rajkosto/hive>
+* Copyright (C) 2009-2013 Rajko Stojadinovic <http://github.com/rajkosto/hive>
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -23,20 +23,15 @@
 #include <Poco/ClassLoader.h>
 #include <Poco/Manifest.h>
 
-template <typename Base, const char* libraryName>
+template <typename Base>
 class SharedLibraryLoader
 {
 public:
-	SharedLibraryLoader()
+	void loadLibrary(const string& libName)
 	{
-		string fileName = getLibraryName() + Poco::SharedLibrary::suffix();
+		string fileName = libName + Poco::SharedLibrary::suffix();
 		_loader.loadLibrary(fileName);
 	}
-	~SharedLibraryLoader() 
-	{
-		//_loader.unloadLibrary(getLibraryName() + Poco::SharedLibrary::suffix());
-	}
-	std::string getLibraryName() const { return libraryName; }
 
 	Base* create(const std::string& className) const { return _loader.create(className); }
 	Base& instance(const std::string& className) const { return _loader.instance(className); }

@@ -131,7 +131,6 @@ void AppServer::initLogger()
 		AutoPtr<FormattingChannel> consFormatChan(new FormattingChannel(consoleFormatter, consoleChan));
 		splitChan->addChannel(consFormatChan);
 	}
-
 	Logger::root().setChannel(splitChan);
 
 	std::string loggingLevel = Poco::toLower(logConf->getString("Level","information"));
