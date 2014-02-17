@@ -301,35 +301,27 @@ Sqf::Value HiveExtApp::streamObjects( Sqf::Parameters params )
 	{
 		if (_initKey.length() < 1)
 		{
-			int serverId = boost::get<int>(params.at(0));
-			setServerId(serverId);
-
-			_objData->populateObjects(getServerId(), _srvObjects);
 			//set up initKey
-			{
-				boost::array<UInt8,16> keyData;
-				Poco::RandomInputStream().read((char*)keyData.c_array(),keyData.size());
-				std::ostringstream ostr;
-				Poco::HexBinaryEncoder enc(ostr);
-				enc.rdbuf()->setLineLength(0);
-				enc.write((const char*)keyData.data(),keyData.size());
-				enc.close();
-				_initKey = ostr.str();
-			}
+			boost::array<UInt8,16> keyData;
+			Poco::RandomInputStream().read((char*)keyData.c_array(),keyData.size());
+			std::ostringstream ostr;
+			Poco::HexBinaryEncoder enc(ostr);
+			enc.rdbuf()->setLineLength(0);
+			enc.write((const char*)keyData.data(),keyData.size());
+			enc.close();
+			_initKey = ostr.str();
+		}
 
-			Sqf::Parameters retVal;
-			retVal.push_back(string("ObjectStreamStart"));
-			retVal.push_back(static_cast<int>(_srvObjects.size()));
-			retVal.push_back(_initKey);
-			return retVal;
-		}
-		else
-		{
-			Sqf::Parameters retVal;
-			retVal.push_back(string("ERROR"));
-			retVal.push_back(string("Instance already initialized"));
-			return retVal;
-		}
+		int serverId = boost::get<int>(params.at(0));
+		setServerId(serverId);
+
+		_objData->populateObjects(getServerId(), _srvObjects);
+
+		Sqf::Parameters retVal;
+		retVal.push_back(string("ObjectStreamStart"));
+		retVal.push_back(static_cast<int>(_srvObjects.size()));
+		retVal.push_back(_initKey);
+		return retVal;
 	}
 	else
 	{
