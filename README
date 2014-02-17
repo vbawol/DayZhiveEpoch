@@ -1,6 +1,6 @@
 Compiling:
 
-You must have Visual Studio 2012 Update 4 or later installed (express versions might work as long as you also have the Windows SDK installed).
+You must have Visual Studio 2013 later installed (express versions might work as long as you also have the Windows SDK installed).
 
 The following dependencies are required to build Hive:
 	BOOST:
