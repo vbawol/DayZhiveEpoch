@@ -73,7 +73,7 @@ Sqf::Value SqlCharDataSource::fetchCharacterInitial( string playerId, int server
 		"`Model` FROM `Character_DATA` WHERE `"+_idFieldName+"` = '%s' AND `Alive` = 1 ORDER BY `CharacterID` DESC LIMIT 1").c_str(), getDB()->escape(playerId).c_str());
 	int infected = 0;
 	bool newChar = false; //not a new char
-	int characterId = -1; //invalid charid
+	Int64 characterId = -1; //invalid charid
 	Sqf::Value worldSpace = Sqf::Parameters(); //empty worldspace
 	Sqf::Value inventory = lexical_cast<Sqf::Value>("[]"); //empty inventory
 	Sqf::Value backpack = lexical_cast<Sqf::Value>("[]"); //empty backpack
@@ -134,7 +134,7 @@ Sqf::Value SqlCharDataSource::fetchCharacterInitial( string playerId, int server
 		{
 			//update last character login
 			auto stmt = getDB()->makeStatement(_stmtUpdateCharacterLastLogin, "UPDATE `Character_DATA` SET `LastLogin` = CURRENT_TIMESTAMP WHERE `CharacterID` = ?");
-			stmt->addInt32(characterId);
+			stmt->addInt64(characterId);
 			bool exRes = stmt->execute();
 			poco_assert(exRes == true);
 		}
@@ -228,7 +228,7 @@ Sqf::Value SqlCharDataSource::fetchCharacterInitial( string playerId, int server
 	return retVal;
 }
 
-Sqf::Value SqlCharDataSource::fetchCharacterDetails( int characterId )
+Sqf::Value SqlCharDataSource::fetchCharacterDetails( Int64 characterId )
 {
 	Sqf::Parameters retVal;
 	//get details from db
@@ -300,7 +300,7 @@ Sqf::Value SqlCharDataSource::fetchCharacterDetails( int characterId )
 	return retVal;
 }
 
-bool SqlCharDataSource::updateCharacter( int characterId, int serverId, const FieldsType& fields )
+bool SqlCharDataSource::updateCharacter( Int64 characterId, int serverId, const FieldsType& fields )
 {
 	map<string,string> sqlFields;
 
@@ -368,37 +368,37 @@ bool SqlCharDataSource::updateCharacter( int characterId, int serverId, const Fi
 	return true;
 }
 
-bool SqlCharDataSource::initCharacter( int characterId, const Sqf::Value& inventory, const Sqf::Value& backpack )
+bool SqlCharDataSource::initCharacter( Int64 characterId, const Sqf::Value& inventory, const Sqf::Value& backpack )
 {
 	auto stmt = getDB()->makeStatement(_stmtInitCharacter, "UPDATE `Character_DATA` SET `Inventory` = ? , `Backpack` = ? WHERE `CharacterID` = ?");
 	stmt->addString(lexical_cast<string>(inventory));
 	stmt->addString(lexical_cast<string>(backpack));
-	stmt->addInt32(characterId);
+	stmt->addInt64(characterId);
 	bool exRes = stmt->execute();
 	poco_assert(exRes == true);
 
 	return exRes;
 }
 
-bool SqlCharDataSource::killCharacter( int characterId, int duration, int infected )
+bool SqlCharDataSource::killCharacter( Int64 characterId, int duration, int infected )
 {
 	auto stmt = getDB()->makeStatement(_stmtKillCharacter, 
 		"UPDATE `Character_DATA` SET `Alive` = 0, `Infected` = ?, `LastLogin` = DATE_SUB(CURRENT_TIMESTAMP, INTERVAL ? MINUTE) WHERE `CharacterID` = ? AND `Alive` = 1");
 	stmt->addInt32(infected);
 	stmt->addInt32(duration);
-	stmt->addInt32(characterId);
+	stmt->addInt64(characterId);
 	bool exRes = stmt->execute();
 	poco_assert(exRes == true);
 
 	return exRes;
 }
 
-bool SqlCharDataSource::recordLogin( string playerId, int characterId, int action )
+bool SqlCharDataSource::recordLogin( string playerId, Int64 characterId, int action )
 {
 	auto stmt = getDB()->makeStatement(_stmtRecordLogin, 
 		"INSERT INTO `Player_LOGIN` (`"+_idFieldName+"`, `CharacterID`, `Datestamp`, `Action`) VALUES (?, ?, CURRENT_TIMESTAMP, ?)");
 	stmt->addString(playerId);
-	stmt->addInt32(characterId);
+	stmt->addInt64(characterId);
 	stmt->addInt32(action);
 	bool exRes = stmt->execute();
 	poco_assert(exRes == true);

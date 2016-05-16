@@ -166,7 +166,7 @@ void SqlObjDataSource::populateObjects( int serverId, ServerObjectsQueue& queue 
 		queue.push(objParams);
 	}
 }
-void SqlObjDataSource::populateTraderObjects( int characterId, ServerObjectsQueue& queue )
+void SqlObjDataSource::populateTraderObjects( Int64 characterId, ServerObjectsQueue& queue )
 {	
 	
 	auto worldObjsRes = getDB()->queryParams("SELECT `id`, `item`, `qty`, `buy`, `sell`, `order`, `tid`, `afile` FROM `Traders_DATA` WHERE `tid`=%d", characterId);
@@ -277,7 +277,7 @@ bool SqlObjDataSource::updateVehicleStatus( int serverId, Int64 objectIdent, con
 	return exRes;
 }
 
-bool SqlObjDataSource::createObject( int serverId, const string& className, double damage, int characterId, 
+bool SqlObjDataSource::createObject( int serverId, const string& className, double damage, Int64 characterId, 
 	const Sqf::Value& worldSpace, const Sqf::Value& inventory, const Sqf::Value& hitPoints, double fuel, Int64 uniqueId )
 {
 	auto stmt = getDB()->makeStatement(_stmtCreateObject, 
@@ -288,7 +288,7 @@ bool SqlObjDataSource::createObject( int serverId, const string& className, doub
 	stmt->addInt32(serverId);
 	stmt->addString(className);
 	stmt->addDouble(damage);
-	stmt->addInt32(characterId);
+	stmt->addInt64(characterId);
 	stmt->addString(lexical_cast<string>(worldSpace));
 	stmt->addString(lexical_cast<string>(inventory));
 	stmt->addString(lexical_cast<string>(hitPoints));

@@ -29,12 +29,12 @@ public:
 	~SqlCharDataSource();
 
 	Sqf::Value fetchCharacterInitial( string playerId, int serverId, const string& playerName ) override;
-	Sqf::Value fetchCharacterDetails( int characterId ) override;
+	Sqf::Value fetchCharacterDetails( Int64 characterId ) override;
 	Sqf::Value fetchTraderObject( int traderObjectId, int action) override;
-	bool updateCharacter( int characterId, int serverId, const FieldsType& fields ) override;
-	bool initCharacter( int characterId, const Sqf::Value& inventory, const Sqf::Value& backpack ) override;
-	bool killCharacter( int characterId, int duration, int infected ) override;
-	bool recordLogin( string playerId, int characterId, int action ) override;
+	bool updateCharacter( Int64 characterId, int serverId, const FieldsType& fields ) override;
+	bool initCharacter( Int64 characterId, const Sqf::Value& inventory, const Sqf::Value& backpack ) override;
+	bool killCharacter( Int64 characterId, int duration, int infected ) override;
+	bool recordLogin( string playerId, Int64 characterId, int action ) override;
 
 private:
 	string _idFieldName;
