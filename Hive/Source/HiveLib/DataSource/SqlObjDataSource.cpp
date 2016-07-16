@@ -94,7 +94,7 @@ void SqlObjDataSource::populateObjects( int serverId, ServerObjectsQueue& queue 
 {
 
 	//Prevent duplicate ObjectUID by setting ObjectUID = ObjectID
-	string commonUpdateUIDSql = "` WHERE `Instance` = " + lexical_cast<string>(serverId) + " AND `ObjectID` <> 0 AND `ObjectID` <> `ObjectUID`";
+	string commonUpdateUIDSql = " WHERE `Instance` = " + lexical_cast<string>(serverId) + " AND `ObjectID` <> 0 AND `ObjectID` <> `ObjectUID`";
 	int numIDUpdated = 0;
 	{
 		auto numObjsToUpdate = getDB()->query(("SELECT COUNT(*) FROM " + _objTableName + commonUpdateUIDSql).c_str());
@@ -320,7 +320,7 @@ Sqf::Value SqlObjDataSource::fetchObjectId( int serverId, Int64 objectIdent )
 {
 	Sqf::Parameters retVal;
 	//get details from db
-	auto worldObjsRes = getDB()->queryParams("SELECT `ObjectID` FROM `%s` WHERE `Instance` = %d AND `ObjectUID` = %"PRIu64"", _objTableName.c_str(), serverId, objectIdent);
+	auto worldObjsRes = getDB()->queryParams("SELECT `ObjectID` FROM `%s` WHERE `Instance` = %d AND `ObjectUID` = %" PRIu64 "", _objTableName.c_str(), serverId, objectIdent);
 
 	if (worldObjsRes && worldObjsRes->fetchRow())
 	{
