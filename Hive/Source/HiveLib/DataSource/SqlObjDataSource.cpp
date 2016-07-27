@@ -94,7 +94,7 @@ void SqlObjDataSource::populateObjects( int serverId, ServerObjectsQueue& queue 
 {
 
 	//Prevent duplicate ObjectUID by setting ObjectUID = ObjectID
-	string commonUpdateUIDSql = " WHERE `Instance` = " + lexical_cast<string>(serverId) + " AND `ObjectID` <> 0 AND `ObjectID` <> `ObjectUID`";
+	string commonUpdateUIDSql = " WHERE `Instance` = " + lexical_cast<string>(serverId) + " AND `ObjectID` <> 0 AND `ObjectID` <> (`ObjectUID` - 1)";
 	int numIDUpdated = 0;
 	{
 		auto numObjsToUpdate = getDB()->query(("SELECT COUNT(*) FROM " + _objTableName + commonUpdateUIDSql).c_str());
@@ -104,7 +104,7 @@ void SqlObjDataSource::populateObjects( int serverId, ServerObjectsQueue& queue 
 	if (numIDUpdated > 0)
 	{
 		_logger.information("Updating " + lexical_cast<string>(numIDUpdated) + " Object_Data ObjectUID");
-		auto stmt2 = getDB()->makeStatement(_stmtUpdateObjectbyUID, "UPDATE " + _objTableName + " SET ObjectUID = ObjectID " + commonUpdateUIDSql);
+		auto stmt2 = getDB()->makeStatement(_stmtUpdateObjectbyUID, "UPDATE " + _objTableName + " SET ObjectUID = (ObjectID + 1) " + commonUpdateUIDSql);
 		if (!stmt2->directExecute())
 			_logger.error("Error executing update ObjectUID statement");
 	}
