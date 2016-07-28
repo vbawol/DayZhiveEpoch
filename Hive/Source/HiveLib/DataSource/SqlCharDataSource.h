@@ -32,6 +32,7 @@ public:
 	Sqf::Value fetchCharacterDetails( Int64 characterId ) override;
 	Sqf::Value fetchTraderObject( int traderObjectId, int action) override;
 	bool updateCharacter( Int64 characterId, int serverId, const FieldsType& fields ) override;
+	bool updateCharacterGroup( string playerId, int serverId, const string& playerGroup)  override;
 	bool initCharacter( Int64 characterId, const Sqf::Value& inventory, const Sqf::Value& backpack ) override;
 	bool killCharacter( Int64 characterId, int duration, int infected ) override;
 	bool recordLogin( string playerId, Int64 characterId, int action ) override;
@@ -42,6 +43,7 @@ private:
 
 	//statement ids
 	SqlStatementID _stmtChangePlayerName;
+	SqlStatementID _stmtChangePlayerGroup;
 	SqlStatementID _stmtInsertPlayer;
 	SqlStatementID _stmtUpdateCharacterLastLogin;
 	SqlStatementID _stmtInsertNewCharacter;

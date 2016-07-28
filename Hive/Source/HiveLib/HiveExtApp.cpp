@@ -153,6 +153,7 @@ HiveExtApp::HiveExtApp(string suffixDir) : AppServer("HiveExt",suffixDir), _serv
 	handlers[201] = boost::bind(&HiveExtApp::playerUpdate,this,_1);
 	handlers[202] = boost::bind(&HiveExtApp::playerDeath,this,_1);
 	handlers[203] = boost::bind(&HiveExtApp::playerInit,this,_1);
+	handlers[204] = boost::bind(&HiveExtApp::updateGroup, this,_1);
 }
 
 #include <boost/lexical_cast.hpp>
@@ -608,6 +609,14 @@ Sqf::Value HiveExtApp::playerDeath( Sqf::Parameters params )
 	int infected = Sqf::GetIntAny(params.at(2));
 	
 	return ReturnBooleanStatus(_charData->killCharacter(characterId,duration,infected));
+}
+
+Sqf::Value HiveExtApp::updateGroup(Sqf::Parameters params)
+{
+	string playerId = Sqf::GetStringAny(params.at(0));
+	string playerGroup = Sqf::GetStringAny(params.at(2));
+
+	return ReturnBooleanStatus(_charData->updateCharacterGroup(playerId, getServerId(), playerGroup));
 }
 
 namespace

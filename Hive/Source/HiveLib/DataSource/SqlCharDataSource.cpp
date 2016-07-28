@@ -33,10 +33,11 @@ SqlCharDataSource::~SqlCharDataSource() {}
 
 Sqf::Value SqlCharDataSource::fetchCharacterInitial( string playerId, int serverId, const string& playerName )
 {
+	Sqf::Value playerGroup = lexical_cast<Sqf::Value>("[]");
 	bool newPlayer = false;
 	//make sure player exists in db
 	{
-		auto playerRes(getDB()->queryParams(("SELECT `PlayerName`, `PlayerSex` FROM `Player_DATA` WHERE `"+_idFieldName+"`='%s'").c_str(), getDB()->escape(playerId).c_str()));
+		auto playerRes(getDB()->queryParams(("SELECT `PlayerName`, `PlayerSex`, `PlayerGroup` FROM `Player_DATA` WHERE `"+_idFieldName+"`='%s'").c_str(), getDB()->escape(playerId).c_str()));
 		if (playerRes && playerRes->fetchRow())
 		{
 			newPlayer = false;
@@ -50,14 +51,16 @@ Sqf::Value SqlCharDataSource::fetchCharacterInitial( string playerId, int server
 				poco_assert(exRes == true);
 				_logger.information("Changed name of player " + playerId + " from '" + playerRes->at(0).getString() + "' to '" + playerName + "'");
 			}
+			playerGroup = lexical_cast<Sqf::Value>(playerRes->at(2).getString());
 		}
 		else
 		{
 			newPlayer = true;
 			//insert new player into db
-			auto stmt = getDB()->makeStatement(_stmtInsertPlayer, "INSERT INTO `Player_DATA` (`"+_idFieldName+"`, `PlayerName`) VALUES (?, ?)");
+			auto stmt = getDB()->makeStatement(_stmtInsertPlayer, "INSERT INTO `Player_DATA` (`"+_idFieldName+"`, `PlayerName`, playerGroup) VALUES (?, ?, ?)");
 			stmt->addString(playerId);
 			stmt->addString(playerName);
+			stmt->addString(lexical_cast<string>(playerGroup));
 			bool exRes = stmt->execute();
 			poco_assert(exRes == true);
 			_logger.information("Created a new player " + playerId + " named '" + playerName + "'");
@@ -217,6 +220,7 @@ Sqf::Value SqlCharDataSource::fetchCharacterInitial( string playerId, int server
 		retVal.push_back(inventory);
 		retVal.push_back(backpack);
 		retVal.push_back(survival);
+		retVal.push_back(playerGroup);
 	} else {
 		retVal.push_back(infected);
 	}
@@ -366,6 +370,19 @@ bool SqlCharDataSource::updateCharacter( Int64 characterId, int serverId, const 
 	}
 
 	return true;
+}
+
+bool SqlCharDataSource::updateCharacterGroup(string playerId, int serverId, const string& playerGroup)
+{
+	auto playerRes(getDB()->queryParams(("SELECT  `PlayerGroup` FROM `Player_DATA` WHERE `" + _idFieldName + "`='%s'").c_str(), getDB()->escape(playerId).c_str()));
+	auto stmt = getDB()->makeStatement(_stmtChangePlayerGroup, "UPDATE `Player_DATA` SET `playerGroup`=? WHERE `" + _idFieldName + "`=?");
+	stmt->addString(lexical_cast<string>(playerGroup));
+	stmt->addString(playerId);
+	bool exRes = stmt->execute();
+	poco_assert(exRes == true);
+	_logger.information("Changed group of player " + playerId + " from '" + playerRes->at(2).getString() + "' to '" + lexical_cast<string>(playerGroup) + "'");
+
+	return exRes;
 }
 
 bool SqlCharDataSource::initCharacter( Int64 characterId, const Sqf::Value& inventory, const Sqf::Value& backpack )
