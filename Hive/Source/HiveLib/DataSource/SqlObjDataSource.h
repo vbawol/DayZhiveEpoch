@@ -33,7 +33,7 @@ public:
 
 	void populateTraderObjects( Int64 characterId, ServerObjectsQueue& queue ) override;
 
-	bool updateObjectInventory( int serverId, Int64 objectIdent, bool byUID, const Sqf::Value& inventory ) override;
+	bool updateObjectInventory( int serverId, Int64 objectIdent, bool byUID, const Sqf::Value& inventory, Int64 coinsValue) override;
 	bool deleteObject( int serverId, Int64 objectIdent, bool byUID ) override;
 	bool updateDatestampObject( int serverId, Int64 objectIdent, bool byUID ) override;
 	bool updateVehicleMovement( int serverId, Int64 objectIdent, const Sqf::Value& worldspace, double fuel ) override;

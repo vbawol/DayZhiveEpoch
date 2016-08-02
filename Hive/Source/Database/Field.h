@@ -50,6 +50,17 @@ public:
 	float getFloat() const { return static_cast<float>(getDouble()); }
 	bool getBool() const { return _value ? atoi(_value) > 0 : false; }
 	Int32 getInt32() const { return _value ? static_cast<Int32>(atol(_value)) : Int32(0); }
+	Int64 getInt64() const
+	{
+		if (!_value)
+			return 0;
+
+		Int64 parsedVal;
+		if (!Poco::NumberParser::tryParse64(_value, parsedVal))
+			return 0;
+
+		return parsedVal;
+	}
 	Int8 getInt8() const { return _value ? static_cast<Int8>(atol(_value)) : Int8(0); }
 	UInt8 getUInt8() const { return _value ? static_cast<UInt8>(atol(_value)) : UInt8(0); }
 	UInt16 getUInt16() const { return _value ? static_cast<UInt16>(atol(_value)) : UInt16(0); }

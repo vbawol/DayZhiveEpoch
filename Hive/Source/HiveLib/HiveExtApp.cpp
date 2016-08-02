@@ -153,7 +153,8 @@ HiveExtApp::HiveExtApp(string suffixDir) : AppServer("HiveExt",suffixDir), _serv
 	handlers[201] = boost::bind(&HiveExtApp::playerUpdate,this,_1);
 	handlers[202] = boost::bind(&HiveExtApp::playerDeath,this,_1);
 	handlers[203] = boost::bind(&HiveExtApp::playerInit,this,_1);
-	handlers[204] = boost::bind(&HiveExtApp::updateGroup, this,_1);
+	handlers[204] = boost::bind(&HiveExtApp::updateGroup, this,_1);		//update player group in player_data
+	handlers[205] = boost::bind(&HiveExtApp::updateGlobalCoins, this, _1);	//update global coins in player_data - use existing calls 303/309 for saving object_data coins. use 201 for character coins
 }
 
 #include <boost/lexical_cast.hpp>
@@ -346,9 +347,18 @@ Sqf::Value HiveExtApp::objectInventory( Sqf::Parameters params, bool byUID /*= f
 	Int64 objectIdent = Sqf::GetBigInt(params.at(0));
 	Sqf::Value inventory = boost::get<Sqf::Parameters>(params.at(1));
 
-	if (objectIdent != 0) //all the vehicles have objectUID = 0, so it would be bad to update those
-		return ReturnBooleanStatus(_objData->updateObjectInventory(getServerId(),objectIdent,byUID,inventory));
-
+	if (objectIdent != 0) { //all the vehicles have objectUID = 0, so it would be bad to update those
+		if (!Sqf::IsNull(params.at(2)))
+		{
+			Int64 coinsValue = boost::get<Int64>(params.at(2));
+			return ReturnBooleanStatus(_objData->updateObjectInventory(getServerId(), objectIdent, byUID, inventory, coinsValue));
+		}
+		else
+		{
+			Int64 coinsValue = -1;
+			return ReturnBooleanStatus(_objData->updateObjectInventory(getServerId(), objectIdent, byUID, inventory, coinsValue));
+		}
+	}
 	return ReturnBooleanStatus(true);
 }
 
@@ -587,6 +597,15 @@ Sqf::Value HiveExtApp::playerUpdate( Sqf::Parameters params )
 		logger().warning("Update of character " + lexical_cast<string>(characterId) + " only had " + lexical_cast<string>(params.size()) + " parameters out of 16");
 	}
 
+	try
+	{
+		if (!Sqf::IsNull(params.at(16)))
+		{
+			Int64 coinsValue = boost::get<Int64>(params.at(16));
+			fields["Coins"] = coinsValue;
+		}
+	} catch (const std::out_of_range&) {} //not using the coin system
+
 	if (fields.size() > 0)
 		return ReturnBooleanStatus(_charData->updateCharacter(characterId,getServerId(),fields));
 
@@ -614,9 +633,18 @@ Sqf::Value HiveExtApp::playerDeath( Sqf::Parameters params )
 Sqf::Value HiveExtApp::updateGroup(Sqf::Parameters params)
 {
 	string playerId = Sqf::GetStringAny(params.at(0));
-	string playerGroup = Sqf::GetStringAny(params.at(2));
+	const Sqf::Value& playerGroup = boost::get<Sqf::Parameters>(params.at(2));
 
 	return ReturnBooleanStatus(_charData->updateCharacterGroup(playerId, getServerId(), playerGroup));
+}
+
+Sqf::Value HiveExtApp::updateGlobalCoins(Sqf::Parameters params)
+{
+	string playerId = Sqf::GetStringAny(params.at(0));
+	Int64 coinsValue = Sqf::GetIntAny(params.at(2));
+	Int64 playerBank = Sqf::GetIntAny(params.at(2));
+
+	return ReturnBooleanStatus(_charData->updatePlayerCoins(playerId, getServerId(), coinsValue, playerBank));
 }
 
 namespace

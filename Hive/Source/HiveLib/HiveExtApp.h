@@ -99,6 +99,7 @@ private:
 	Sqf::Value playerInit(Sqf::Parameters params);
 	Sqf::Value playerDeath(Sqf::Parameters params);
 	Sqf::Value updateGroup(Sqf::Parameters params);
+	Sqf::Value updateGlobalCoins(Sqf::Parameters params);
 
 	Sqf::Value dataRequest(Sqf::Parameters params, bool async = false);
 	Sqf::Value dataStatus(Sqf::Parameters params);

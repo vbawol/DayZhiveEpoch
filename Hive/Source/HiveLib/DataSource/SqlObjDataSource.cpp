@@ -132,7 +132,7 @@ void SqlObjDataSource::populateObjects( int serverId, ServerObjectsQueue& queue 
 		}
 	}
 	
-	auto worldObjsRes = getDB()->queryParams("SELECT `ObjectID`, `Classname`, `CharacterID`, `Worldspace`, `Inventory`, `Hitpoints`, `Fuel`, `Damage` FROM `%s` WHERE `Instance`=%d AND `Classname` IS NOT NULL", _objTableName.c_str(), serverId);
+	auto worldObjsRes = getDB()->queryParams("SELECT `ObjectID`, `Classname`, `CharacterID`, `Worldspace`, `Inventory`, `Hitpoints`, `Fuel`, `Damage`, `StorageCoins` FROM `%s` WHERE `Instance`=%d AND `Classname` IS NOT NULL", _objTableName.c_str(), serverId);
 	if (!worldObjsRes)
 	{
 		_logger.error("Failed to fetch objects from database");
@@ -150,10 +150,10 @@ void SqlObjDataSource::populateObjects( int serverId, ServerObjectsQueue& queue 
 		try
 		{
 			objParams.push_back(row[1].getString()); //classname
-			objParams.push_back(lexical_cast<string>(row[2].getInt32())); //ownerId should be stringified
+			objParams.push_back(lexical_cast<string>(row[2].getInt64())); //ownerId should be stringified
 
 			Sqf::Value worldSpace = lexical_cast<Sqf::Value>(row[3].getString());
-			if (_vehicleOOBReset && row[2].getInt32() == 0) // no owner = vehicle
+			if (_vehicleOOBReset && row[2].getInt64() == 0) // no owner = vehicle
 			{
 				PositionInfo posInfo = FixOOBWorldspace(worldSpace);
 				if (posInfo.is_initialized())
@@ -173,6 +173,7 @@ void SqlObjDataSource::populateObjects( int serverId, ServerObjectsQueue& queue 
 			objParams.push_back(lexical_cast<Sqf::Value>(row[5].getCStr()));
 			objParams.push_back(row[6].getDouble());
 			objParams.push_back(row[7].getDouble());
+			objParams.push_back(row[8].getInt64()); //Coins
 		}
 		catch (const bad_lexical_cast&)
 		{
@@ -216,15 +217,28 @@ void SqlObjDataSource::populateTraderObjects( Int64 characterId, ServerObjectsQu
 	}
 }
 
-bool SqlObjDataSource::updateObjectInventory( int serverId, Int64 objectIdent, bool byUID, const Sqf::Value& inventory )
+bool SqlObjDataSource::updateObjectInventory( int serverId, Int64 objectIdent, bool byUID, const Sqf::Value& inventory, Int64 coinsValue)
 {
 	unique_ptr<SqlStatement> stmt;
-	if (byUID)
-		stmt = getDB()->makeStatement(_stmtUpdateObjectbyUID, "UPDATE `"+_objTableName+"` SET `Inventory` = ? WHERE `ObjectUID` = ? AND `Instance` = ?");
+	if (byUID) {
+		if (coinsValue >= 0) {
+			stmt = getDB()->makeStatement(_stmtUpdateObjectbyUID, "UPDATE `" + _objTableName + "` SET `Inventory` = ?, `StorageCoins` = ? WHERE `ObjectUID` = ? AND `Instance` = ?");
+		} else {
+			stmt = getDB()->makeStatement(_stmtUpdateObjectbyUID, "UPDATE `" + _objTableName + "` SET `Inventory` = ? WHERE `ObjectUID` = ? AND `Instance` = ?");
+		}
+	}
 	else
-		stmt = getDB()->makeStatement(_stmtUpdateObjectByID, "UPDATE `"+_objTableName+"` SET `Inventory` = ? WHERE `ObjectID` = ? AND `Instance` = ?");
-
+	{
+		if (coinsValue >= 0) {
+			stmt = getDB()->makeStatement(_stmtUpdateObjectByID, "UPDATE `" + _objTableName + "` SET `Inventory` = ?, `StorageCoins` = ? WHERE `ObjectID` = ? AND `Instance` = ?");
+		} else {
+			stmt = getDB()->makeStatement(_stmtUpdateObjectByID, "UPDATE `" + _objTableName + "` SET `Inventory` = ? WHERE `ObjectID` = ? AND `Instance` = ?");
+		}
+	}
 	stmt->addString(lexical_cast<string>(inventory));
+	if (coinsValue >= 0) {
+		stmt->addInt64(coinsValue);
+	}
 	stmt->addInt64(objectIdent);
 	stmt->addInt32(serverId);
 
