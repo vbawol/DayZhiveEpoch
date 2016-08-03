@@ -347,8 +347,14 @@ Sqf::Value HiveExtApp::objectInventory( Sqf::Parameters params, bool byUID /*= f
 	Int64 objectIdent = Sqf::GetBigInt(params.at(0));
 	Sqf::Value inventory = boost::get<Sqf::Parameters>(params.at(1));
 	Int64 coinsValue = -1;
-	if (!Sqf::IsNull(params.at(2)))
-		coinsValue = Sqf::GetBigInt(params.at(2));
+
+	try
+	{
+		if (!Sqf::IsNull(params.at(2))) {
+			coinsValue = Sqf::GetBigInt(params.at(2));
+		}
+	}
+	catch (const std::out_of_range&) {} //not using the coin system
 
 	if (objectIdent != 0)  {
 		if (coinsValue >= 0) {
