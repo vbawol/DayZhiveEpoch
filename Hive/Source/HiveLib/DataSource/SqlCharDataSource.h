@@ -44,7 +44,10 @@ private:
 
 	//statement ids
 	SqlStatementID _stmtChangePlayerName;
-	SqlStatementID _stmtUpdatePlayerPersistent;
+	SqlStatementID _stmtUpdatePlayerGroup;
+	SqlStatementID _stmtUpdatePlayerCoinsA;
+	SqlStatementID _stmtUpdatePlayerCoinsB;
+	SqlStatementID _stmtUpdatePlayerCoinsC;
 	SqlStatementID _stmtInsertPlayer;
 	SqlStatementID _stmtUpdateCharacterLastLogin;
 	SqlStatementID _stmtInsertNewCharacter;

@@ -346,17 +346,15 @@ Sqf::Value HiveExtApp::objectInventory( Sqf::Parameters params, bool byUID /*= f
 {
 	Int64 objectIdent = Sqf::GetBigInt(params.at(0));
 	Sqf::Value inventory = boost::get<Sqf::Parameters>(params.at(1));
+	Int64 coinsValue = -1;
+	if (!Sqf::IsNull(params.at(2)))
+		coinsValue = Sqf::GetBigInt(params.at(2));
 
-	if (objectIdent != 0) { //all the vehicles have objectUID = 0, so it would be bad to update those
-		if (!Sqf::IsNull(params.at(2)))
-		{
-			Int64 coinsValue = boost::get<Int64>(params.at(2));
-			return ReturnBooleanStatus(_objData->updateObjectInventory(getServerId(), objectIdent, byUID, inventory, coinsValue));
-		}
-		else
-		{
-			Int64 coinsValue = -1;
-			return ReturnBooleanStatus(_objData->updateObjectInventory(getServerId(), objectIdent, byUID, inventory, coinsValue));
+	if (objectIdent != 0)  {
+		if (coinsValue >= 0) {
+			return ReturnBooleanStatus(_objData->updateObjectInventoryWCoins(getServerId(), objectIdent, byUID, inventory, coinsValue));
+		} else {
+			return ReturnBooleanStatus(_objData->updateObjectInventory(getServerId(), objectIdent, byUID, inventory));
 		}
 	}
 	return ReturnBooleanStatus(true);
@@ -410,7 +408,7 @@ Sqf::Value HiveExtApp::objectPublish( Sqf::Parameters params )
 {
 	string className = boost::get<string>(params.at(1));
 	double damage = Sqf::GetDouble(params.at(2));
-	Int64 characterId = Sqf::GetIntAny(params.at(3));
+	Int64 characterId = Sqf::GetBigInt(params.at(3));
 	Sqf::Value worldSpace = boost::get<Sqf::Parameters>(params.at(4));
 	Sqf::Value inventory = boost::get<Sqf::Parameters>(params.at(5));
 	Sqf::Value hitPoints = boost::get<Sqf::Parameters>(params.at(6));
@@ -438,7 +436,7 @@ Sqf::Value HiveExtApp::loadPlayer( Sqf::Parameters params )
 
 Sqf::Value HiveExtApp::loadCharacterDetails( Sqf::Parameters params )
 {
-	Int64 characterId = Sqf::GetIntAny(params.at(0));
+	Int64 characterId = Sqf::GetBigInt(params.at(0));
 	
 	return _charData->fetchCharacterDetails(characterId);
 }
@@ -447,7 +445,7 @@ Sqf::Value HiveExtApp::loadTraderDetails( Sqf::Parameters params )
 {
 	if (_srvObjects.empty())
 	{
-		Int64 characterId = Sqf::GetIntAny(params.at(0));
+		Int64 characterId = Sqf::GetBigInt(params.at(0));
 
 		_objData->populateTraderObjects(characterId, _srvObjects);
 
@@ -475,7 +473,7 @@ Sqf::Value HiveExtApp::tradeObject( Sqf::Parameters params )
 Sqf::Value HiveExtApp::recordCharacterLogin( Sqf::Parameters params )
 {
 	string playerId = Sqf::GetStringAny(params.at(0));
-	Int64 characterId = Sqf::GetIntAny(params.at(1));
+	Int64 characterId = Sqf::GetBigInt(params.at(1));
 	int action = Sqf::GetIntAny(params.at(2));
 
 	return ReturnBooleanStatus(_charData->recordLogin(playerId,characterId,action));
@@ -483,7 +481,7 @@ Sqf::Value HiveExtApp::recordCharacterLogin( Sqf::Parameters params )
 
 Sqf::Value HiveExtApp::playerUpdate( Sqf::Parameters params )
 {
-	Int64 characterId = Sqf::GetIntAny(params.at(0));
+	Int64 characterId = Sqf::GetBigInt(params.at(0));
 	CharDataSource::FieldsType fields;
 
 	try
@@ -601,20 +599,21 @@ Sqf::Value HiveExtApp::playerUpdate( Sqf::Parameters params )
 	{
 		if (!Sqf::IsNull(params.at(16)))
 		{
-			Int64 coinsValue = boost::get<Int64>(params.at(16));
+		Int64 coinsValue = static_cast<int>(Sqf::GetBigInt(params.at(16)));
 			fields["Coins"] = coinsValue;
 		}
 	} catch (const std::out_of_range&) {} //not using the coin system
 
-	if (fields.size() > 0)
-		return ReturnBooleanStatus(_charData->updateCharacter(characterId,getServerId(),fields));
+	if (fields.size() > 0) {
+		return ReturnBooleanStatus(_charData->updateCharacter(characterId, getServerId(), fields));
+	}
 
 	return ReturnBooleanStatus(true);
 }
 
 Sqf::Value HiveExtApp::playerInit( Sqf::Parameters params )
 {
-	Int64 characterId = Sqf::GetIntAny(params.at(0));
+	Int64 characterId = Sqf::GetBigInt(params.at(0));
 	Sqf::Value inventory = boost::get<Sqf::Parameters>(params.at(1));
 	Sqf::Value backpack = boost::get<Sqf::Parameters>(params.at(2));
 
@@ -623,7 +622,7 @@ Sqf::Value HiveExtApp::playerInit( Sqf::Parameters params )
 
 Sqf::Value HiveExtApp::playerDeath( Sqf::Parameters params )
 {
-	Int64 characterId = Sqf::GetIntAny(params.at(0));
+	Int64 characterId = Sqf::GetBigInt(params.at(0));
 	int duration = static_cast<int>(Sqf::GetDouble(params.at(1)));
 	int infected = Sqf::GetIntAny(params.at(2));
 	
@@ -641,8 +640,8 @@ Sqf::Value HiveExtApp::updateGroup(Sqf::Parameters params)
 Sqf::Value HiveExtApp::updateGlobalCoins(Sqf::Parameters params)
 {
 	string playerId = Sqf::GetStringAny(params.at(0));
-	Int64 coinsValue = Sqf::GetIntAny(params.at(2));
-	Int64 playerBank = Sqf::GetIntAny(params.at(2));
+	Int64 coinsValue = Sqf::GetBigInt(params.at(2));
+	Int64 playerBank = Sqf::GetBigInt(params.at(3));
 
 	return ReturnBooleanStatus(_charData->updatePlayerCoins(playerId, getServerId(), coinsValue, playerBank));
 }

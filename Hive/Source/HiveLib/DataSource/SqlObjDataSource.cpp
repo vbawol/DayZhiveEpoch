@@ -217,28 +217,34 @@ void SqlObjDataSource::populateTraderObjects( Int64 characterId, ServerObjectsQu
 	}
 }
 
-bool SqlObjDataSource::updateObjectInventory( int serverId, Int64 objectIdent, bool byUID, const Sqf::Value& inventory, Int64 coinsValue)
+bool SqlObjDataSource::updateObjectInventory(int serverId, Int64 objectIdent, bool byUID, const Sqf::Value& inventory)
 {
 	unique_ptr<SqlStatement> stmt;
-	if (byUID) {
-		if (coinsValue >= 0) {
-			stmt = getDB()->makeStatement(_stmtUpdateObjectbyUID, "UPDATE `" + _objTableName + "` SET `Inventory` = ?, `StorageCoins` = ? WHERE `ObjectUID` = ? AND `Instance` = ?");
-		} else {
-			stmt = getDB()->makeStatement(_stmtUpdateObjectbyUID, "UPDATE `" + _objTableName + "` SET `Inventory` = ? WHERE `ObjectUID` = ? AND `Instance` = ?");
-		}
-	}
+	if (byUID)
+		stmt = getDB()->makeStatement(_stmtUpdateObjectbyUID, "UPDATE `" + _objTableName + "` SET `Inventory` = ? WHERE `ObjectUID` = ? AND `Instance` = ?");
 	else
-	{
-		if (coinsValue >= 0) {
-			stmt = getDB()->makeStatement(_stmtUpdateObjectByID, "UPDATE `" + _objTableName + "` SET `Inventory` = ?, `StorageCoins` = ? WHERE `ObjectID` = ? AND `Instance` = ?");
-		} else {
-			stmt = getDB()->makeStatement(_stmtUpdateObjectByID, "UPDATE `" + _objTableName + "` SET `Inventory` = ? WHERE `ObjectID` = ? AND `Instance` = ?");
-		}
-	}
+		stmt = getDB()->makeStatement(_stmtUpdateObjectByID, "UPDATE `" + _objTableName + "` SET `Inventory` = ? WHERE `ObjectID` = ? AND `Instance` = ?");
+
 	stmt->addString(lexical_cast<string>(inventory));
-	if (coinsValue >= 0) {
-		stmt->addInt64(coinsValue);
-	}
+	stmt->addInt64(objectIdent);
+	stmt->addInt32(serverId);
+
+	bool exRes = stmt->execute();
+	poco_assert(exRes == true);
+
+	return exRes;
+}
+
+bool SqlObjDataSource::updateObjectInventoryWCoins(int serverId, Int64 objectIdent, bool byUID, const Sqf::Value& inventory, Int64 coinsValue)
+{
+	unique_ptr<SqlStatement> stmt;
+	if (byUID)
+		stmt = getDB()->makeStatement(_stmtUpdateObjectbyUIDCoins, "UPDATE `" + _objTableName + "` SET `Inventory` = ?, `StorageCoins` = ? WHERE `ObjectUID` = ? AND `Instance` = ?");
+	else
+		stmt = getDB()->makeStatement(_stmtUpdateObjectByIDCoins, "UPDATE `" + _objTableName + "` SET `Inventory` = ?, `StorageCoins` = ? WHERE `ObjectID` = ? AND `Instance` = ?");
+
+	stmt->addString(lexical_cast<string>(inventory));
+	stmt->addInt64(coinsValue);
 	stmt->addInt64(objectIdent);
 	stmt->addInt32(serverId);
 

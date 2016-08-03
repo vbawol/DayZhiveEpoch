@@ -64,7 +64,7 @@ Sqf::Value SqlCharDataSource::fetchCharacterInitial( string playerId, int server
 			auto stmt = getDB()->makeStatement(_stmtInsertPlayer, "INSERT INTO `Player_DATA` (`"+_idFieldName+"`, `PlayerName`, playerGroup) VALUES (?, ?, ?)");
 			stmt->addString(playerId);
 			stmt->addString(playerName);
-			stmt->addString(lexical_cast<string>((playerGroup)));
+			stmt->addString(lexical_cast<string>(playerGroup));
 			bool exRes = stmt->execute();
 			poco_assert(exRes == true);
 			_logger.information("Created a new player " + playerId + " named '" + playerName + "'");
@@ -296,7 +296,7 @@ Sqf::Value SqlCharDataSource::fetchCharacterDetails( Int64 characterId )
 			}
 			humanity = charDetRes->at(8).getInt32();
 			instance = charDetRes->at(9).getInt32();
-			coins = charDetRes->at(10).getUInt64();
+			coins = charDetRes->at(10).getInt64();
 		}
 
 		retVal.push_back(string("PASS"));
@@ -323,7 +323,6 @@ bool SqlCharDataSource::updateCharacter( Int64 characterId, int serverId, const 
 	{
 		const string& name = it->first;
 		const Sqf::Value& val = it->second;
-
 		//arrays
 		if (name == "Worldspace" || name == "Inventory" || name == "Backpack" || name == "Medical" || name == "CurrentState")
 			sqlFields[name] = "'"+getDB()->escape(lexical_cast<string>(val))+"'";
@@ -361,10 +360,10 @@ bool SqlCharDataSource::updateCharacter( Int64 characterId, int serverId, const 
 		}
 		else if (name == "Coins")
 		{
-			Int64 coinNum = static_cast<int>(Sqf::GetIntAny(val));
-			if (coinNum >= 0)
-				sqlFields[name] = "(`" + name + "` " + lexical_cast<string>(coinNum) + ")";
-
+			Int64 coinNum = static_cast<Int64>(Sqf::GetBigInt(val));
+			if (coinNum >= 0) {
+				sqlFields[name] = lexical_cast<string>(coinNum);
+			}
 		}
 	}
 
@@ -383,6 +382,7 @@ bool SqlCharDataSource::updateCharacter( Int64 characterId, int serverId, const 
 				query += " , ";
 		}
 		query += ", `InstanceID` = " + lexical_cast<string>(serverId) + "  WHERE `CharacterID` = " + lexical_cast<string>(characterId);
+
 		bool exRes = getDB()->execute(query.c_str());
 		poco_assert(exRes == true);
 
@@ -394,7 +394,7 @@ bool SqlCharDataSource::updateCharacter( Int64 characterId, int serverId, const 
 
 bool SqlCharDataSource::updateCharacterGroup(string playerId, int serverId, const Sqf::Value& playerGroup)
 {
-	auto stmt = getDB()->makeStatement(_stmtUpdatePlayerPersistent, "UPDATE `Player_DATA` SET `playerGroup`=? WHERE `" + _idFieldName + "`=?");
+	auto stmt = getDB()->makeStatement(_stmtUpdatePlayerGroup, "UPDATE `Player_DATA` SET `playerGroup`=? WHERE `" + _idFieldName + "`=?");
 	stmt->addString(lexical_cast<string>(playerGroup));
 	stmt->addString(playerId);
 	bool exRes = stmt->execute();
@@ -405,11 +405,33 @@ bool SqlCharDataSource::updateCharacterGroup(string playerId, int serverId, cons
 
 bool SqlCharDataSource::updatePlayerCoins(string playerId, int serverId, Int64 coinsValue, Int64 playerBank)
 {
-	auto stmt = getDB()->makeStatement(_stmtUpdatePlayerPersistent, "UPDATE `Player_DATA` SET `PlayerCoins`=?, `BankCoins`=? WHERE `" + _idFieldName + "`=?");
-	stmt->addInt64(coinsValue); //BANK
-	stmt->addInt64(playerBank); //BANKSALDO
-	stmt->addString(playerId);
-	bool exRes = stmt->execute();
+	unique_ptr<SqlStatement> stmt;
+	bool exRes = true;
+	if (coinsValue >= 0 && playerBank >= 0) {
+		stmt = getDB()->makeStatement(_stmtUpdatePlayerCoinsA, "UPDATE `Player_DATA` SET `PlayerCoins`=?, `BankCoins`=? WHERE `" + _idFieldName + "`=?");
+		stmt->addInt64(coinsValue); //BANK
+		stmt->addInt64(playerBank); //BANKSALDO
+		stmt->addString(playerId);
+		exRes = stmt->execute();
+	}
+	else if (coinsValue >= 0) {
+		stmt = getDB()->makeStatement(_stmtUpdatePlayerCoinsB, "UPDATE `Player_DATA` SET `PlayerCoins`=? WHERE `" + _idFieldName + "`=?");
+		_logger.information("SQF Failed to pass player bank value, skipping column: `BankCoins` update");
+		stmt->addInt64(coinsValue); //BANK
+		stmt->addString(playerId);
+		exRes = stmt->execute();
+	}
+	else if (playerBank >= 0) {
+		stmt = getDB()->makeStatement(_stmtUpdatePlayerCoinsC, "UPDATE `Player_DATA` SET `BankCoins`=? WHERE `" + _idFieldName + "`=?");
+		_logger.information("SQF Failed to pass player coins value, skipping column: `PlayerCoins` update");
+		stmt->addInt64(playerBank); //BANKSALDO
+		stmt->addString(playerId);
+		exRes = stmt->execute();
+	}
+	else 
+	{
+		_logger.information("SQF Failed to pass both player coins and player bank values skipping update");
+	}
 	poco_assert(exRes == true);
 
 	return exRes;
@@ -486,8 +508,6 @@ Sqf::Value SqlCharDataSource::fetchTraderObject( int traderObjectId, int action)
 					retVal.push_back(string("ERROR"));
 					return retVal;
 				}	
-			
-
 			}
 			else 
 			{

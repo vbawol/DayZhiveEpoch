@@ -28,7 +28,8 @@ public:
 	typedef std::queue<Sqf::Parameters> ServerObjectsQueue;
 	virtual void populateObjects( int serverId, ServerObjectsQueue& queue ) = 0;
 	virtual void populateTraderObjects( Int64 characterId, ServerObjectsQueue& queue ) = 0;
-	virtual bool updateObjectInventory( int serverId, Int64 objectIdent, bool byUID, const Sqf::Value& inventory, Int64 coinsValue ) = 0;
+	virtual bool updateObjectInventory( int serverId, Int64 objectIdent, bool byUID, const Sqf::Value& inventory ) = 0;
+	virtual bool updateObjectInventoryWCoins(int serverId, Int64 objectIdent, bool byUID, const Sqf::Value& inventory, Int64 coinsValue ) = 0;
 	virtual bool deleteObject( int serverId, Int64 objectIdent, bool byUID ) = 0;
 	virtual bool updateDatestampObject( int serverId, Int64 objectIdent, bool byUID ) = 0;
 	virtual bool updateVehicleMovement( int serverId, Int64 objectIdent, const Sqf::Value& worldspace, double fuel ) = 0;
