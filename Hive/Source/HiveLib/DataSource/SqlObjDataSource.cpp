@@ -132,7 +132,7 @@ void SqlObjDataSource::populateObjects( int serverId, ServerObjectsQueue& queue 
 		}
 	}
 	
-	auto worldObjsRes = getDB()->queryParams("SELECT `ObjectID`, `Classname`, `CharacterID`, `Worldspace`, `Inventory`, `Hitpoints`, `Fuel`, `Damage`, `StorageCoins` FROM `%s` WHERE `Instance`=%d AND `Classname` IS NOT NULL", _objTableName.c_str(), serverId);
+	auto worldObjsRes = getDB()->queryParams("SELECT `ObjectID`, `Classname`, `CharacterID`, `Worldspace`, `Inventory`, `Hitpoints`, `Fuel`, `Damage`, `StorageCoins` FROM `%s` WHERE `Instance`=%d AND `Classname` IS NOT NULL AND `Damage` < 1", _objTableName.c_str(), serverId);
 	if (!worldObjsRes)
 	{
 		_logger.error("Failed to fetch objects from database");
