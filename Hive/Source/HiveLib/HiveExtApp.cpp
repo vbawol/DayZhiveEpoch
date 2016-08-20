@@ -297,8 +297,9 @@ Sqf::Value HiveExtApp::getDateTime( Sqf::Parameters params )
 #include "DataSource/ObjDataSource.h"
 #include <Poco/RandomStream.h>
 
-Sqf::Value HiveExtApp::streamObjects( Sqf::Parameters params )
+Sqf::Value HiveExtApp::streamObjects( Sqf::Parameters params)
 {
+	bool legacyStream = boost::get<bool>(params.at(1));
 	if (_srvObjects.empty())
 	{
 		if (_initKey.length() < 1)
@@ -328,17 +329,54 @@ Sqf::Value HiveExtApp::streamObjects( Sqf::Parameters params )
 		else
 		{
 			Sqf::Parameters retVal;
-			retVal.push_back(string("ERROR"));
-			retVal.push_back(string("Instance already initialized"));
+			if (legacyStream) {
+				retVal.push_back(string("ERROR"));
+				retVal.push_back(string("Instance already initialized"));
+			} else {
+				string LastFileName = boost::get<string>(params.at(0));
+				remove(LastFileName.c_str()); //delete file
+				retVal.push_back(string("NOTICE"));
+				retVal.push_back(string("" + LastFileName + " has been deleted"));
+			}
 			return retVal;
 		}
 	}
 	else
 	{
-		Sqf::Parameters retVal = _srvObjects.front();
-		_srvObjects.pop();
+		if (legacyStream) {
+			Sqf::Parameters retVal = _srvObjects.front();
+			_srvObjects.pop();
+			return retVal;
+		} else {
+			string fileName = "ObjectData" + _initKey + ".sqf"; //filename will not be predictable if the init key is appended
+			std::ofstream ofs;
+			ofs.open(fileName, std::ofstream::out | std::ofstream::trunc); //clear file contents just incase it exists
+			ofs.close();
+			ofs.open(fileName, std::ofstream::out | std::ofstream::app); //open file again to write objects
+			int i = 0;
 
-		return retVal;
+			while (!(_srvObjects.empty())) { //write queue to file, formated as array in SQF
+				Sqf::Value writeVal = _srvObjects.front();
+				if (_srvObjects.size() == 1) {
+					ofs << writeVal;
+					ofs << "];";
+				}
+				else if (i < 1) {
+					ofs << "[";
+					ofs << writeVal;
+					ofs << ",";
+					i = 1;
+				}
+				else {
+					ofs << writeVal;
+					ofs << ",";
+				}
+				_srvObjects.pop();
+			}
+
+			ofs.close();
+			return fileName;
+		}
 	}
 }
 
