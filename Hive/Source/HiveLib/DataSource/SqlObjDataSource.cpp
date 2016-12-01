@@ -104,7 +104,7 @@ void SqlObjDataSource::populateObjects( int serverId, ServerObjectsQueue& queue 
 	if (numIDUpdated > 0)
 	{
 		_logger.information("Updating " + lexical_cast<string>(numIDUpdated) + " Object_Data ObjectUID");
-		auto stmt2 = getDB()->makeStatement(_stmtUpdateObjectbyUID, "UPDATE " + _objTableName + " SET ObjectUID = (ObjectID + 1) " + commonUpdateUIDSql);
+		auto stmt2 = getDB()->makeStatement(_stmtChangeObjectUID, "UPDATE " + _objTableName + " SET ObjectUID = (ObjectID + 1) " + commonUpdateUIDSql);
 		if (!stmt2->directExecute())
 			_logger.error("Error executing update ObjectUID statement");
 	}

@@ -48,6 +48,7 @@ private:
 	bool _vehicleOOBReset;
 
 	//statement ids
+	SqlStatementID _stmtChangeObjectUID;
 	SqlStatementID _stmtDeleteOldObject;
 	SqlStatementID _stmtUpdateObjectbyUID;
 	SqlStatementID _stmtUpdateObjectByID;
