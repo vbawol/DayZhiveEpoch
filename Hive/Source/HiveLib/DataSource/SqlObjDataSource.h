@@ -46,6 +46,7 @@ private:
 	string _objTableName;
 	int _cleanupPlacedDays;
 	bool _vehicleOOBReset;
+	string _maintenanceObjs;
 
 	//statement ids
 	SqlStatementID _stmtChangeObjectUID;

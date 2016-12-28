@@ -81,19 +81,21 @@ SqlObjDataSource::SqlObjDataSource( Poco::Logger& logger, shared_ptr<Database> d
 		_objTableName = getDB()->escape(conf->getString("Table",defaultTable));
 		_cleanupPlacedDays = conf->getInt("CleanupPlacedAfterDays",6);
 		_vehicleOOBReset = conf->getBool("ResetOOBVehicles",false);
+		_maintenanceObjs = conf->getString("MaintenanceObjects","'Land_DZE_GarageWoodDoorLocked','Land_DZE_LargeWoodDoorLocked','Land_DZE_WoodDoorLocked','CinderWallDoorLocked_DZ','CinderWallDoorSmallLocked_DZ','Plastic_Pole_EP1_DZ'");
 	}
 	else
 	{
 		_objTableName = defaultTable;
 		_cleanupPlacedDays = -1;
 		_vehicleOOBReset = false;
+		_maintenanceObjs = "'Land_DZE_GarageWoodDoorLocked','Land_DZE_LargeWoodDoorLocked','Land_DZE_WoodDoorLocked','CinderWallDoorLocked_DZ','CinderWallDoorSmallLocked_DZ','Plastic_Pole_EP1_DZ'";
 	}
 }
 
 void SqlObjDataSource::populateObjects( int serverId, ServerObjectsQueue& queue )
 {
 
-	//Prevent duplicate ObjectUID by setting ObjectUID = ObjectID
+	//Prevent duplicate ObjectUID by setting ObjectUID = (ObjectID + 1)
 	string commonUpdateUIDSql = " WHERE `Instance` = " + lexical_cast<string>(serverId) + " AND `ObjectID` <> 0 AND `ObjectID` <> (`ObjectUID` - 1)";
 	int numIDUpdated = 0;
 	{
@@ -111,10 +113,11 @@ void SqlObjDataSource::populateObjects( int serverId, ServerObjectsQueue& queue 
 
 	if (_cleanupPlacedDays >= 0)
 	{
-		string commonSql = "FROM `"+_objTableName+"` WHERE `Instance` = " + lexical_cast<string>(serverId) +
+		string commonSql = "FROM `" + _objTableName + "` WHERE `Instance` = " + lexical_cast<string>(serverId) +
 			" AND `ObjectUID` <> 0 AND `CharacterID` <> 0" +
-			" AND `Datestamp` < DATE_SUB(CURRENT_TIMESTAMP, INTERVAL "+lexical_cast<string>(_cleanupPlacedDays)+" DAY)" +
-			" AND ( (`Inventory` IS NULL) OR (`Inventory` = '[]') )";
+			" AND `Datestamp` < DATE_SUB(CURRENT_TIMESTAMP, INTERVAL " + lexical_cast<string>(_cleanupPlacedDays) + " DAY)" +
+			" AND ( (`Inventory` IS NULL) OR (`Inventory` = '[]') " +
+			" OR (`Classname` IN ( " + _maintenanceObjs + ") ))";
 
 		int numCleaned = 0;
 		{
@@ -124,7 +127,7 @@ void SqlObjDataSource::populateObjects( int serverId, ServerObjectsQueue& queue 
 		}
 		if (numCleaned > 0)
 		{
-			_logger.information("Removing " + lexical_cast<string>(numCleaned) + " empty placed objects older than " + lexical_cast<string>(_cleanupPlacedDays) + " days");
+			_logger.information("Removing " + lexical_cast<string>(numCleaned) + " placed objects older than " + lexical_cast<string>(_cleanupPlacedDays) + " days");
 
 			auto stmt = getDB()->makeStatement(_stmtDeleteOldObject, "DELETE "+commonSql);
 			if (!stmt->directExecute())
