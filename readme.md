@@ -1,6 +1,5 @@
-
-# Dependincies
-* The instructions for buiulding dependincies are based on VS 2017, modify MSVC versions according to your VS version
+# Dependencies
+* The instructions for buiulding Dependencies are based on VS 2017, modify MSVC versions according to your VS version
 * Unless otherwise noted this guide is performed from the VS tools command prompt
 * This project reuires visual studio to be run as an administrator!
 1. Copy the HiveDeps folder into your C:\ drive
@@ -100,7 +99,7 @@
 2. if you recieve any missing include errors, google them, chances are the VS installation requires additional components
 
 # Common Errors
-1. Double check your include and library paths if you are missing any .lib .h files, or links. You need to change paths in this guide to YOUR actual path and version after building the dependincies
+1. Double check your include and library paths if you are missing any .lib .h files, or links. You need to change paths in this guide to YOUR actual path and version after building the Dependencies
 	* Also make sure your .props files are in the correct places and are up to date
 2. ```:VCEnd exited with error code #```
 	* Run VS as administrator, make sure you have python! Clean solution and rebuild
