@@ -23,7 +23,7 @@
 1. Download Poco here (We use 1.7.8): https://pocoproject.org/download/index.html and extract files to C:\HiveDeps\poco
 2. POCO requires OpenSSL, MySQL Connector and ODBC (part of Windows SDK)
 3. install Windows 8.1 SDK from this link if building fails https://developer.microsoft.com/en-us/windows/downloads/windows-8-1-sdk
-4. download OpenSSL and extract \openssl-VER\ to C:\, rename openssl-VER to openssl, we need to configure OpenSSL:
+4. download OpenSSL https://www.openssl.org/source/ and extract to C;\HiveDeps\openssl, rename openssl-VER to openssl, we need to configure OpenSSL
     * Download and install NASM http://www.nasm.us/
     * download and install PERL for windows, I used Strawberry PERL http://strawberryperl.com/releases.html
     * We need to build both MT and MD libraries
@@ -33,7 +33,7 @@
     * ```perl Configure VC-WIN32```
     * ```nmake```
     * ```nmake test```
-    ****** We use a buiuld script from https://www.npcglib.org/~stathis/blog/precompiled-openssl/ to build both static and dynamic (MT/MD) libraries for POCO.
+    * We use a buiuld script from https://www.npcglib.org/~stathis/blog/precompiled-openssl/ to build both static and dynamic (MT/MD) libraries for POCO.
     * alternatively you may just want to download the compiled version and copy over the libs, but there isn't a precompiled MSVC 2017 version yet
     * Download and install CygWin https://www.cygwin.com/ we need DOS2UNIX, PATCH, and 7Z (use view: FULL and search feature)
     * Download the applicable version of the openssl build script, I used build-openssl-1.1.0e.bat AND PATCH openssl-1.1.0e.patch then place in your C:\openssl folder
