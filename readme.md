@@ -86,17 +86,18 @@
 ** PostgreSQL compilation is not covered in this tutorial as many users do not use it. You may use Rajkosto's Poco-Deps repository on Github**
 ** IN VS Right click on the PostgreSQL project and unload it **
 
-5. Build the solutuion
-	* if you are using the windows tooal and apps SDK version 10 you will need to add an include path ```$(UniversalCRT_IncludePath)``` to all projects
-	* right click each project > properties > C/C++ > General > add ```$(UniversalCRT_IncludePath)``` to your additional includes directory (replace [VER] with your SDK version path)
-	* replace text in the additional includes field with: ```%(AdditionalIncludeDirectories)$(UniversalCRT_IncludePath)C:\HiveDeps\boost;C:\Program Files (x86)\Windows Kits\10\Include\[VER]\ucrt```
-6. you need to edit the boost lib directory to the Library Directories field of project properties -> VC++ Directories. where VER is your MSVC VER
-	* AND Add the ucrt libs directory to the field if you are using 10 SDK
-	* add first to the input field, keep any text already in the box ```C:\HiveDeps\boost\lib\x86\VER\lib;```
-	* FOR SDK 10 USERS ONLY! ```C:\HiveDeps\boost\lib\x86\VER\lib;C:\Program Files (x86)\Windows Kits\10\Lib\VER\ucrt\x86;```
-6. Edit TBB.props file if it does not reflect you current TBB lib path
-	* ```$(MSBuildThisFileDirectory)build\windows_ia32_cl_vc14_release;``` ----> ```$(MSBuildThisFileDirectory)build\windows_ia32_cl_[YOUR VERSION]_release;```
-8. if you recieve any missing include errors, google them, chances are the VS installation requires additional components
+#### Finally building the Hive
+1. resolve your lib and include paths
+    * if you are using the windows tooal and apps SDK version 10 you will need to add an include path ```$(UniversalCRT_IncludePath)``` to all projects
+    * right click each project > properties > C/C++ > General > add ```$(UniversalCRT_IncludePath)``` to your additional includes directory (replace [VER] with your SDK version path)
+    * replace text in the additional includes field with: ```%(AdditionalIncludeDirectories)$(UniversalCRT_IncludePath)C:\HiveDeps\boost;C:\Program Files (x86)\Windows Kits\10\Include\[VER]\ucrt```
+    1. you need to edit the boost lib directory to the Library Directories field of project properties -> VC++ Directories. where VER is your MSVC VER
+        * AND Add the ucrt libs directory to the field if you are using 10 SDK
+        * add first to the input field, keep any text already in the box ```C:\HiveDeps\boost\lib\x86\VER\lib;```
+        * FOR SDK 10 USERS ONLY! ```C:\HiveDeps\boost\lib\x86\VER\lib;C:\Program Files (x86)\Windows Kits\10\Lib\VER\ucrt\x86;```
+    2. Edit TBB.props file if it does not reflect you current TBB lib path
+        * ```$(MSBuildThisFileDirectory)build\windows_ia32_cl_vc14_release;``` ----> ```$(MSBuildThisFileDirectory)build\windows_ia32_cl_[YOUR VERSION]_release;```
+2. if you recieve any missing include errors, google them, chances are the VS installation requires additional components
 
 # Common Errors
 1. Double check your include and library paths if you are missing any .lib .h files, or links. You need to change paths in this guide to YOUR actual path and version after building the dependincies
