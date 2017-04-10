@@ -16,8 +16,8 @@
   2. ```CD C:\HiveDeps\boost```
   3. ```bootstrap.bat```
   4. ```b2.exe toolset=msvc-14.0 --build-type=complete variant=release,debug runtime-link=shared,static link=static threading=multi address-model=32 --without-log --stagedir=lib\x86\v141 --build-dir=out\x86\v141```
-  * NOTE: boost 1.63 has no build out of the box for VS2017, you must edit project-config.jam
-  ```using msvc ;``` -----> ```using msvc : 14.0 : "c:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.10.24728\bin\HostX64\x64\cl.exe";```
+	  * NOTE: boost 1.63 has no build out of the box for VS2017, you must edit project-config.jam
+	  ```using msvc ;``` -----> ```using msvc : 14.0 : "c:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.10.24728\bin\HostX64\x64\cl.exe";```
 
 #### Building POCO
 1. Download Poco here (We use 1.7.8): https://pocoproject.org/download/index.html and extract files to C:\HiveDeps\poco
@@ -109,3 +109,4 @@
 	* You must be working out of a cloned repository using the github app for windows
 	* The file ./source/HiveLib/version_gen.sh and version_gen.py may need to be edited ```gitVer=`git rev-list HEAD | head -n 1``` ---> ```gitVer=`git rev-list HEAD ^origin | head -n 1```
 3. If you are building a debug build, you will need to change all of the static paths to the debug libraries, since I linked to the release libs in the props, and guide above
+4. If your build is failing despite following the directions, ensure you select the release|Win32 Active config setting
