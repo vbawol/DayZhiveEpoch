@@ -77,14 +77,14 @@ Sqf::Value SqlCharDataSource::fetchCharacterInitial( string playerId, int server
 		"TIMESTAMPDIFF(MINUTE,`Datestamp`,`LastLogin`) as `SurvivalTime`, "
 		"TIMESTAMPDIFF(MINUTE,`LastAte`,NOW()) as `MinsLastAte`, "
 		"TIMESTAMPDIFF(MINUTE,`LastDrank`,NOW()) as `MinsLastDrank`, "
-		"`Model`, `Coins` FROM `Character_DATA` WHERE `"+_idFieldName+"` = '%s' AND `Alive` = 1 ORDER BY `CharacterID` DESC LIMIT 1").c_str(), getDB()->escape(playerId).c_str());
+		"`Model`, `duration`, `Coins` FROM `Character_DATA` WHERE `"+_idFieldName+"` = '%s' AND `Alive` = 1 ORDER BY `CharacterID` DESC LIMIT 1").c_str(), getDB()->escape(playerId).c_str());
 	int infected = 0;
 	bool newChar = false; //not a new char
 	Int64 characterId = -1; //invalid charid
 	Sqf::Value worldSpace = Sqf::Parameters(); //empty worldspace
 	Sqf::Value inventory = lexical_cast<Sqf::Value>("[]"); //empty inventory
 	Sqf::Value backpack = lexical_cast<Sqf::Value>("[]"); //empty backpack
-	Sqf::Value survival = lexical_cast<Sqf::Value>("[0,0,0]"); //0 mins alive, 0 mins since last ate, 0 mins since last drank
+	Sqf::Value survival = lexical_cast<Sqf::Value>("[0,0,0,0]"); //0 mins alive, 0 mins since last ate, 0 mins since last drank, 0 time played
 	string model = ""; //empty models will be defaulted by scripts
 	Int64 CharacterCoins = 0; //Coins
 	if (charsRes && charsRes->fetchRow())
@@ -128,6 +128,7 @@ Sqf::Value SqlCharDataSource::fetchCharacterInitial( string playerId, int server
 			survivalArr[0] = charsRes->at(4).getInt32();
 			survivalArr[1] = charsRes->at(5).getInt32();
 			survivalArr[2] = charsRes->at(6).getInt32();
+			survivalArr[3] = charsRes->at(8).getInt32();
 		}
 		try
 		{
@@ -137,7 +138,7 @@ Sqf::Value SqlCharDataSource::fetchCharacterInitial( string playerId, int server
 		{
 			model = charsRes->at(7).getString();
 		}
-		CharacterCoins = charsRes->at(8).getInt64();
+		CharacterCoins = charsRes->at(9).getInt64();
 
 		//update last login
 		{
