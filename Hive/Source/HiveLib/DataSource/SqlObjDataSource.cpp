@@ -343,7 +343,9 @@ Sqf::Value SqlObjDataSource::fetchObjectId( int serverId, Int64 objectIdent )
 {
 	Sqf::Parameters retVal;
 	//get details from db
-	auto worldObjsRes = getDB()->queryParams("SELECT `ObjectID` FROM `%s` WHERE `Instance` = %d AND `ObjectUID` = %" PRIu64 "", _objTableName.c_str(), serverId, objectIdent);
+	//auto worldObjsRes = getDB()->queryParams("SELECT `ObjectID` FROM `%s` WHERE `Instance` = %d AND `ObjectUID` = %" PRIu64 "", _objTableName.c_str(), serverId, objectIdent);
+
+	auto worldObjsRes = getDB()->queryParams("CALL retObjID('%s', %d, %" PRIu64 ", @OID)", _objTableName.c_str(), serverId, objectIdent);
 
 	if (worldObjsRes && worldObjsRes->fetchRow())
 	{
