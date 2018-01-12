@@ -1,0 +1,25 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ImportGroup Label="PropertySheets">
+    <Import Project="Executable.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros">
+    <OutSuffix Condition="'$(Configuration)'=='release_shared'">
+    </OutSuffix>
+    <OutSuffix Condition="'$(Configuration)'=='debug_shared'">
+    </OutSuffix>
+    <OutSuffix Condition="'$(Configuration)'=='release_static_md'">static_md\</OutSuffix>
+    <OutSuffix Condition="'$(Configuration)'=='debug_static_md'">static_md\</OutSuffix>
+    <OutSuffix Condition="'$(Configuration)'=='release_static_mt'">static_mt\</OutSuffix>
+    <OutSuffix Condition="'$(Configuration)'=='debug_static_mt'">static_mt\</OutSuffix>
+  </PropertyGroup>
+  <PropertyGroup>
+    <OutDir>bin\$(Platform)\$(PlatformToolset)\$(OutSuffix)</OutDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <Link>
+      <ImportLibrary>$(TargetDir)$(TargetName).lib</ImportLibrary>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup />
+</Project>

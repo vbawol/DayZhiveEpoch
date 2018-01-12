@@ -153,6 +153,8 @@ HiveExtApp::HiveExtApp(string suffixDir) : AppServer("HiveExt",suffixDir), _serv
 	handlers[201] = boost::bind(&HiveExtApp::playerUpdate,this,_1);
 	handlers[202] = boost::bind(&HiveExtApp::playerDeath,this,_1);
 	handlers[203] = boost::bind(&HiveExtApp::playerInit,this,_1);
+	handlers[204] = boost::bind(&HiveExtApp::updateGroup, this,_1);		//update player group in player_data
+	handlers[205] = boost::bind(&HiveExtApp::updateGlobalCoins, this, _1);	//update global coins in player_data - use existing calls 303/309 for saving object_data coins. use 201 for character coins
 }
 
 #include <boost/lexical_cast.hpp>
@@ -295,8 +297,9 @@ Sqf::Value HiveExtApp::getDateTime( Sqf::Parameters params )
 #include "DataSource/ObjDataSource.h"
 #include <Poco/RandomStream.h>
 
-Sqf::Value HiveExtApp::streamObjects( Sqf::Parameters params )
+Sqf::Value HiveExtApp::streamObjects( Sqf::Parameters params)
 {
+	bool legacyStream = boost::get<bool>(params.at(1));
 	if (_srvObjects.empty())
 	{
 		if (_initKey.length() < 1)
@@ -326,17 +329,54 @@ Sqf::Value HiveExtApp::streamObjects( Sqf::Parameters params )
 		else
 		{
 			Sqf::Parameters retVal;
-			retVal.push_back(string("ERROR"));
-			retVal.push_back(string("Instance already initialized"));
+			if (legacyStream) {
+				retVal.push_back(string("ERROR"));
+				retVal.push_back(string("Instance already initialized"));
+			} else {
+				string LastFileName = boost::get<string>(params.at(0));
+				remove(LastFileName.c_str()); //delete file
+				retVal.push_back(string("NOTICE"));
+				retVal.push_back(string("" + LastFileName + " has been deleted"));
+			}
 			return retVal;
 		}
 	}
 	else
 	{
-		Sqf::Parameters retVal = _srvObjects.front();
-		_srvObjects.pop();
+		if (legacyStream) {
+			Sqf::Parameters retVal = _srvObjects.front();
+			_srvObjects.pop();
+			return retVal;
+		} else {
+			string fileName = "ObjectData" + _initKey + ".sqf"; //filename will not be predictable if the init key is appended
+			std::ofstream ofs;
+			ofs.open(fileName, std::ofstream::out | std::ofstream::trunc); //clear file contents just incase it exists
+			ofs.close();
+			ofs.open(fileName, std::ofstream::out | std::ofstream::app); //open file again to write objects
+			int i = 0;
 
-		return retVal;
+			while (!(_srvObjects.empty())) { //write queue to file, formated as array in SQF
+				Sqf::Value writeVal = _srvObjects.front();
+				if (_srvObjects.size() == 1) {
+					ofs << writeVal;
+					ofs << "];";
+				}
+				else if (i < 1) {
+					ofs << "[";
+					ofs << writeVal;
+					ofs << ",";
+					i = 1;
+				}
+				else {
+					ofs << writeVal;
+					ofs << ",";
+				}
+				_srvObjects.pop();
+			}
+
+			ofs.close();
+			return fileName;
+		}
 	}
 }
 
@@ -344,10 +384,23 @@ Sqf::Value HiveExtApp::objectInventory( Sqf::Parameters params, bool byUID /*= f
 {
 	Int64 objectIdent = Sqf::GetBigInt(params.at(0));
 	Sqf::Value inventory = boost::get<Sqf::Parameters>(params.at(1));
+	Int64 coinsValue = -1;
 
-	if (objectIdent != 0) //all the vehicles have objectUID = 0, so it would be bad to update those
-		return ReturnBooleanStatus(_objData->updateObjectInventory(getServerId(),objectIdent,byUID,inventory));
+	try
+	{
+		if (!Sqf::IsNull(params.at(2))) {
+			coinsValue = Sqf::GetBigInt(params.at(2));
+		}
+	}
+	catch (const std::out_of_range&) {} //not using the coin system
 
+	if (objectIdent != 0)  {
+		if (coinsValue >= 0) {
+			return ReturnBooleanStatus(_objData->updateObjectInventoryWCoins(getServerId(), objectIdent, byUID, inventory, coinsValue));
+		} else {
+			return ReturnBooleanStatus(_objData->updateObjectInventory(getServerId(), objectIdent, byUID, inventory));
+		}
+	}
 	return ReturnBooleanStatus(true);
 }
 
@@ -399,7 +452,7 @@ Sqf::Value HiveExtApp::objectPublish( Sqf::Parameters params )
 {
 	string className = boost::get<string>(params.at(1));
 	double damage = Sqf::GetDouble(params.at(2));
-	int characterId = Sqf::GetIntAny(params.at(3));
+	Int64 characterId = Sqf::GetBigInt(params.at(3));
 	Sqf::Value worldSpace = boost::get<Sqf::Parameters>(params.at(4));
 	Sqf::Value inventory = boost::get<Sqf::Parameters>(params.at(5));
 	Sqf::Value hitPoints = boost::get<Sqf::Parameters>(params.at(6));
@@ -427,7 +480,7 @@ Sqf::Value HiveExtApp::loadPlayer( Sqf::Parameters params )
 
 Sqf::Value HiveExtApp::loadCharacterDetails( Sqf::Parameters params )
 {
-	int characterId = Sqf::GetIntAny(params.at(0));
+	Int64 characterId = Sqf::GetBigInt(params.at(0));
 	
 	return _charData->fetchCharacterDetails(characterId);
 }
@@ -436,7 +489,7 @@ Sqf::Value HiveExtApp::loadTraderDetails( Sqf::Parameters params )
 {
 	if (_srvObjects.empty())
 	{
-		int characterId = Sqf::GetIntAny(params.at(0));
+		Int64 characterId = Sqf::GetBigInt(params.at(0));
 
 		_objData->populateTraderObjects(characterId, _srvObjects);
 
@@ -464,7 +517,7 @@ Sqf::Value HiveExtApp::tradeObject( Sqf::Parameters params )
 Sqf::Value HiveExtApp::recordCharacterLogin( Sqf::Parameters params )
 {
 	string playerId = Sqf::GetStringAny(params.at(0));
-	int characterId = Sqf::GetIntAny(params.at(1));
+	Int64 characterId = Sqf::GetBigInt(params.at(1));
 	int action = Sqf::GetIntAny(params.at(2));
 
 	return ReturnBooleanStatus(_charData->recordLogin(playerId,characterId,action));
@@ -472,7 +525,7 @@ Sqf::Value HiveExtApp::recordCharacterLogin( Sqf::Parameters params )
 
 Sqf::Value HiveExtApp::playerUpdate( Sqf::Parameters params )
 {
-	int characterId = Sqf::GetIntAny(params.at(0));
+	Int64 characterId = Sqf::GetBigInt(params.at(0));
 	CharDataSource::FieldsType fields;
 
 	try
@@ -586,15 +639,25 @@ Sqf::Value HiveExtApp::playerUpdate( Sqf::Parameters params )
 		logger().warning("Update of character " + lexical_cast<string>(characterId) + " only had " + lexical_cast<string>(params.size()) + " parameters out of 16");
 	}
 
-	if (fields.size() > 0)
-		return ReturnBooleanStatus(_charData->updateCharacter(characterId,getServerId(),fields));
+	try
+	{
+		if (!Sqf::IsNull(params.at(16)))
+		{
+		Int64 coinsValue = static_cast<int>(Sqf::GetBigInt(params.at(16)));
+			fields["Coins"] = coinsValue;
+		}
+	} catch (const std::out_of_range&) {} //not using the coin system
+
+	if (fields.size() > 0) {
+		return ReturnBooleanStatus(_charData->updateCharacter(characterId, getServerId(), fields));
+	}
 
 	return ReturnBooleanStatus(true);
 }
 
 Sqf::Value HiveExtApp::playerInit( Sqf::Parameters params )
 {
-	int characterId = Sqf::GetIntAny(params.at(0));
+	Int64 characterId = Sqf::GetBigInt(params.at(0));
 	Sqf::Value inventory = boost::get<Sqf::Parameters>(params.at(1));
 	Sqf::Value backpack = boost::get<Sqf::Parameters>(params.at(2));
 
@@ -603,11 +666,28 @@ Sqf::Value HiveExtApp::playerInit( Sqf::Parameters params )
 
 Sqf::Value HiveExtApp::playerDeath( Sqf::Parameters params )
 {
-	int characterId = Sqf::GetIntAny(params.at(0));
+	Int64 characterId = Sqf::GetBigInt(params.at(0));
 	int duration = static_cast<int>(Sqf::GetDouble(params.at(1)));
 	int infected = Sqf::GetIntAny(params.at(2));
 	
 	return ReturnBooleanStatus(_charData->killCharacter(characterId,duration,infected));
+}
+
+Sqf::Value HiveExtApp::updateGroup(Sqf::Parameters params)
+{
+	string playerId = Sqf::GetStringAny(params.at(0));
+	const Sqf::Value& playerGroup = boost::get<Sqf::Parameters>(params.at(2));
+
+	return ReturnBooleanStatus(_charData->updateCharacterGroup(playerId, getServerId(), playerGroup));
+}
+
+Sqf::Value HiveExtApp::updateGlobalCoins(Sqf::Parameters params)
+{
+	string playerId = Sqf::GetStringAny(params.at(0));
+	Int64 coinsValue = Sqf::GetBigInt(params.at(2));
+	Int64 playerBank = Sqf::GetBigInt(params.at(3));
+
+	return ReturnBooleanStatus(_charData->updatePlayerCoins(playerId, getServerId(), coinsValue, playerBank));
 }
 
 namespace
